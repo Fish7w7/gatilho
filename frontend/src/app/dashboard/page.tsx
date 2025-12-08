@@ -17,6 +17,7 @@ interface Alert {
 export default function DashboardPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -33,18 +34,25 @@ export default function DashboardPage() {
 
   const fetchAlerts = async (userId: string, token: string) => {
     try {
+      // SEM barra no final da URL
       const res = await fetch(`http://localhost:8000/api/alerts?user_id=${userId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      if (!res.ok) throw new Error('Erro ao carregar alertas');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Erro ao carregar alertas');
+      }
       
       const data = await res.json();
       setAlerts(data);
-    } catch (error) {
+      setError('');
+    } catch (error: any) {
       console.error('Erro:', error);
+      setError(error.message || 'Erro ao carregar alertas');
     } finally {
       setLoading(false);
     }
@@ -60,15 +68,19 @@ export default function DashboardPage() {
       const res = await fetch(`http://localhost:8000/api/alerts/${alertId}?user_id=${userId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      if (!res.ok) throw new Error('Erro ao excluir alerta');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Erro ao excluir alerta');
+      }
       
       setAlerts(alerts.filter(a => a.id !== alertId));
-    } catch (error) {
-      alert('Erro ao excluir alerta');
+    } catch (error: any) {
+      alert(error.message || 'Erro ao excluir alerta');
     }
   };
 
@@ -92,7 +104,7 @@ export default function DashboardPage() {
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-primary-600">Gatilho</h1>
+            <h1 className="text-2xl font-bold text-primary-600">🔔 Gatilho</h1>
             <button
               onClick={handleLogout}
               className="text-gray-600 hover:text-gray-900 text-sm font-medium"
@@ -115,12 +127,20 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">Carregando alertas...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <p className="text-gray-500 mt-4">Carregando alertas...</p>
           </div>
         ) : alerts.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <div className="text-6xl mb-4">📭</div>
             <p className="text-gray-500 text-lg mb-4">
               Você ainda não tem alertas configurados
             </p>
@@ -148,7 +168,7 @@ export default function DashboardPage() {
                           ? 'bg-green-100 text-green-700' 
                           : 'bg-gray-100 text-gray-700'
                       }`}>
-                        {alert.triggered ? 'Disparado' : alert.is_active ? 'Ativo' : 'Pausado'}
+                        {alert.triggered ? '🔔 Disparado' : alert.is_active ? '✅ Ativo' : '⏸️ Pausado'}
                       </span>
                     </div>
                     
@@ -170,7 +190,7 @@ export default function DashboardPage() {
                       onClick={() => handleDelete(alert.id)}
                       className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
                     >
-                      Excluir
+                      🗑️ Excluir
                     </button>
                   </div>
                 </div>

@@ -26,6 +26,7 @@ export default function NewAlertPage() {
     }
 
     try {
+      // SEM barra no final
       const res = await fetch('http://localhost:8000/api/alerts', {
         method: 'POST',
         headers: {
@@ -102,9 +103,9 @@ export default function NewAlertPage() {
               onChange={(e) => setAlertType(e.target.value)}
               className="input-field"
             >
-              <option value="price">Preço Alvo</option>
-              <option value="percentage">Variação Percentual</option>
-              <option value="volume">Volume</option>
+              <option value="price">💰 Preço Alvo</option>
+              <option value="percentage">📊 Variação Percentual</option>
+              <option value="volume">📈 Volume</option>
             </select>
           </div>
 
@@ -147,7 +148,7 @@ export default function NewAlertPage() {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              <strong>Resumo:</strong> Alerta será disparado quando <strong>{ticker || 'ATIVO'}</strong>
+              <strong>📋 Resumo:</strong> Alerta será disparado quando <strong>{ticker || 'ATIVO'}</strong>
               {' '}{alertType === 'price' ? 'atingir preço' : alertType === 'percentage' ? 'variar' : 'tiver volume'}
               {' '}{condition} {targetValue || '0'}
               {alertType === 'price' && ' reais'}
@@ -161,7 +162,7 @@ export default function NewAlertPage() {
               disabled={loading}
               className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Criando...' : 'Criar Alerta'}
+              {loading ? '⏳ Criando...' : '✅ Criar Alerta'}
             </button>
             <Link href="/dashboard" className="flex-1 btn-secondary text-center">
               Cancelar

@@ -7,12 +7,23 @@ from .config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifica se a senha está correta"""
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
+    """
+    Hash da senha com validação de tamanho.
+    Bcrypt tem limite de 72 bytes.
+    """
+    # Trunca senhas muito longas para 72 caracteres
+    # (muito improvável que alguém digite senha tão longa, mas vamos prevenir)
+    if len(password) > 72:
+        password = password[:72]
+    
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Cria token JWT"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -23,6 +34,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 def verify_token(token: str):
+    """Verifica se o token é válido"""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload

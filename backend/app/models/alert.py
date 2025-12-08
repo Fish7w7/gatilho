@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Foreig
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from ..core.database import Base
+from sqlalchemy import Index
 
 class Alert(Base):
     __tablename__ = "alerts"
@@ -17,4 +18,9 @@ class Alert(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     triggered_at = Column(DateTime(timezone=True), nullable=True)
     
+    __table_args__ = (
+        Index('idx_user_active', 'user_id', 'is_active'),
+        Index('idx_ticker_type', 'ticker', 'alert_type'),
+        Index('idx_triggered_at', 'triggered_at'),
+    )
     user = relationship("User", back_populates="alerts")

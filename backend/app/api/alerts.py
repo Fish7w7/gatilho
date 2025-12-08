@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, field_serializer
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from ..core.database import get_db
 from ..models.alert import Alert
@@ -24,15 +24,21 @@ class AlertResponse(BaseModel):
     condition: str
     is_active: bool
     triggered: bool
-    created_at: datetime  # Aceita datetime
+    created_at: datetime
+    triggered_at: Optional[datetime] = None
 
-    # Serializa datetime para string ISO no response
-    @field_serializer('created_at')
-    def serialize_datetime(self, dt: datetime, _info):
-        return dt.isoformat()
+    @field_serializer('created_at', 'triggered_at')
+    def serialize_datetime(self, dt: Optional[datetime], _info):
+        return dt.isoformat() if dt else None
 
     class Config:
         from_attributes = True
+
+class AlertStats(BaseModel):
+    total_alerts: int
+    active_alerts: int
+    triggered_alerts: int
+    total_tickers: int
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
@@ -82,14 +88,19 @@ def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
         )
 
 @router.get("", response_model=List[AlertResponse])
-def list_alerts(user_id: int = Query(...), db: Session = Depends(get_db)):
-    """Lista todos os alertas ativos de um usuário"""
+def list_alerts(
+    user_id: int = Query(...),
+    active_only: bool = Query(True, description="Retornar apenas alertas ativos"),
+    db: Session = Depends(get_db)
+):
+    """Lista alertas do usuário"""
     try:
-        alerts = db.query(Alert).filter(
-            Alert.user_id == user_id,
-            Alert.is_active == True
-        ).order_by(Alert.created_at.desc()).all()
+        query = db.query(Alert).filter(Alert.user_id == user_id)
         
+        if active_only:
+            query = query.filter(Alert.is_active == True)
+        
+        alerts = query.order_by(Alert.created_at.desc()).all()
         return alerts
         
     except Exception as e:
@@ -97,6 +108,65 @@ def list_alerts(user_id: int = Query(...), db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erro ao buscar alertas"
+        )
+
+@router.get("/history", response_model=List[AlertResponse])
+def get_alert_history(
+    user_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+    """Retorna histórico de alertas disparados"""
+    try:
+        alerts = db.query(Alert).filter(
+            Alert.user_id == user_id,
+            Alert.triggered == True
+        ).order_by(Alert.triggered_at.desc()).limit(50).all()
+        
+        return alerts
+        
+    except Exception as e:
+        print(f"❌ Erro ao buscar histórico: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao buscar histórico"
+        )
+
+@router.get("/stats", response_model=AlertStats)
+def get_alert_stats(
+    user_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+    """Retorna estatísticas dos alertas do usuário"""
+    try:
+        total_alerts = db.query(Alert).filter(Alert.user_id == user_id).count()
+        active_alerts = db.query(Alert).filter(
+            Alert.user_id == user_id,
+            Alert.is_active == True
+        ).count()
+        triggered_alerts = db.query(Alert).filter(
+            Alert.user_id == user_id,
+            Alert.triggered == True
+        ).count()
+        
+        # Conta tickers únicos
+        tickers = db.query(Alert.ticker).filter(
+            Alert.user_id == user_id,
+            Alert.is_active == True
+        ).distinct().all()
+        total_tickers = len(tickers)
+        
+        return AlertStats(
+            total_alerts=total_alerts,
+            active_alerts=active_alerts,
+            triggered_alerts=triggered_alerts,
+            total_tickers=total_tickers
+        )
+        
+    except Exception as e:
+        print(f"❌ Erro ao buscar estatísticas: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao buscar estatísticas"
         )
 
 @router.delete("/{alert_id}")

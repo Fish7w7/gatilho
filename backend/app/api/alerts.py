@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typing import List
+from datetime import datetime
 from ..core.database import get_db
 from ..models.alert import Alert
 from ..models.user import User
@@ -23,12 +24,17 @@ class AlertResponse(BaseModel):
     condition: str
     is_active: bool
     triggered: bool
-    created_at: str
+    created_at: datetime  # Aceita datetime
+
+    # Serializa datetime para string ISO no response
+    @field_serializer('created_at')
+    def serialize_datetime(self, dt: datetime, _info):
+        return dt.isoformat()
 
     class Config:
         from_attributes = True
 
-@router.post("", status_code=status.HTTP_201_CREATED)  # SEM barra final
+@router.post("", status_code=status.HTTP_201_CREATED)
 def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     """Cria um novo alerta"""
     user = db.query(User).filter(User.id == alert.user_id).first()
@@ -75,7 +81,7 @@ def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
             detail="Erro ao criar alerta"
         )
 
-@router.get("", response_model=List[AlertResponse])  # SEM barra final
+@router.get("", response_model=List[AlertResponse])
 def list_alerts(user_id: int = Query(...), db: Session = Depends(get_db)):
     """Lista todos os alertas ativos de um usuário"""
     try:

@@ -1,455 +1,405 @@
-import React, { useState } from 'react';
-import { ArrowLeft, TrendingUp, BarChart3, Volume2, AlertCircle, CheckCircle, DollarSign, Percent, Target } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, TrendingUp, TrendingDown, Volume2, Plus, Trash2, History, LogOut, AlertCircle, CheckCircle, Clock, BarChart3, Target } from 'lucide-react';
 
-const NewAlertForm = () => {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    ticker: '',
-    alertType: '',
-    condition: '',
-    targetValue: ''
-  });
+// Mock data para demonstração
+const mockStats = {
+  total_alerts: 12,
+  active_alerts: 8,
+  triggered_alerts: 4,
+  total_tickers: 6
+};
 
-  const [errors, setErrors] = useState({});
-  const [searchTicker, setSearchTicker] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
+const mockAlerts = [
+  {
+    id: 1,
+    ticker: "PETR4",
+    alert_type: "price",
+    target_value: 42.50,
+    condition: ">",
+    is_active: true,
+    triggered: false,
+    created_at: new Date().toISOString(),
+    current_price: 41.80
+  },
+  {
+    id: 2,
+    ticker: "VALE3",
+    alert_type: "percentage",
+    target_value: -5,
+    condition: "<",
+    is_active: true,
+    triggered: false,
+    created_at: new Date().toISOString(),
+    current_change: -2.3
+  },
+  {
+    id: 3,
+    ticker: "BBDC4",
+    alert_type: "volume",
+    target_value: 1000000,
+    condition: ">",
+    is_active: true,
+    triggered: false,
+    created_at: new Date().toISOString(),
+    current_volume: 850000
+  }
+];
 
-  const popularStocks = [
-    { ticker: 'PETR4', name: 'Petrobras', sector: 'Petróleo' },
-    { ticker: 'VALE3', name: 'Vale', sector: 'Mineração' },
-    { ticker: 'ITUB4', name: 'Itaú', sector: 'Bancos' },
-    { ticker: 'BBDC4', name: 'Bradesco', sector: 'Bancos' },
-    { ticker: 'MGLU3', name: 'Magazine Luiza', sector: 'Varejo' },
-    { ticker: 'B3SA3', name: 'B3', sector: 'Financeiro' },
-    { ticker: 'WEGE3', name: 'WEG', sector: 'Industrial' },
-    { ticker: 'RENT3', name: 'Localiza', sector: 'Locação' }
-  ];
+const mockHistory = [
+  {
+    id: 4,
+    ticker: "ITUB4",
+    alert_type: "price",
+    target_value: 28.50,
+    condition: ">",
+    is_active: false,
+    triggered: true,
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    triggered_at: new Date(Date.now() - 86400000).toISOString()
+  },
+  {
+    id: 5,
+    ticker: "MGLU3",
+    alert_type: "percentage",
+    target_value: 8,
+    condition: ">",
+    is_active: false,
+    triggered: true,
+    created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+    triggered_at: new Date(Date.now() - 86400000 * 3).toISOString()
+  }
+];
 
-  const alertTypes = [
-    {
-      id: 'price',
-      name: 'Preço',
-      description: 'Alerta quando o preço atingir um valor específico',
-      icon: DollarSign,
-      color: 'emerald',
-      example: 'Ex: PETR4 > R$ 42,00'
-    },
-    {
-      id: 'percentage',
-      name: 'Variação %',
-      description: 'Alerta quando a variação percentual do dia atingir um limite',
-      icon: Percent,
-      color: 'amber',
-      example: 'Ex: VALE3 < -5%'
-    },
-    {
-      id: 'volume',
-      name: 'Volume',
-      description: 'Alerta quando o volume negociado ultrapassar um valor',
-      icon: Volume2,
-      color: 'purple',
-      example: 'Ex: ITUB4 > 1.000.000'
-    }
-  ];
+const GatilhoDashboard = () => {
+  const [activeTab, setActiveTab] = useState('active');
+  const [alerts, setAlerts] = useState(mockAlerts);
+  const [history, setHistory] = useState(mockHistory);
+  const [stats, setStats] = useState(mockStats);
+  const [showNewAlertModal, setShowNewAlertModal] = useState(false);
 
-  const conditions = [
-    { value: '>', label: 'Maior que (>)', desc: 'Ativa quando subir acima do alvo' },
-    { value: '<', label: 'Menor que (<)', desc: 'Ativa quando cair abaixo do alvo' },
-    { value: '>=', label: 'Maior ou igual (≥)', desc: 'Ativa quando atingir ou superar' },
-    { value: '<=', label: 'Menor ou igual (≤)', desc: 'Ativa quando atingir ou cair' }
-  ];
-
-  const filteredStocks = popularStocks.filter(stock =>
-    stock.ticker.toLowerCase().includes(searchTicker.toLowerCase()) ||
-    stock.name.toLowerCase().includes(searchTicker.toLowerCase())
-  );
-
-  const handleSubmit = () => {
-    const newErrors = {};
-    if (!formData.ticker) newErrors.ticker = 'Selecione uma ação';
-    if (!formData.alertType) newErrors.alertType = 'Selecione o tipo de alerta';
-    if (!formData.condition) newErrors.condition = 'Selecione uma condição';
-    if (!formData.targetValue) newErrors.targetValue = 'Digite o valor alvo';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      setFormData({ ticker: '', alertType: '', condition: '', targetValue: '' });
-      setStep(1);
-    }, 2000);
-  };
-
-  const getColorClasses = (color) => {
-    const colors = {
-      emerald: {
-        bg: 'bg-emerald-50',
-        border: 'border-emerald-200',
-        text: 'text-emerald-600',
-        hover: 'hover:bg-emerald-100',
-        selected: 'border-emerald-500 bg-emerald-50'
+  const getAlertTypeConfig = (type) => {
+    const configs = {
+      price: {
+        icon: TrendingUp,
+        label: 'Preço',
+        color: 'text-emerald-600',
+        bgColor: 'bg-emerald-50',
+        borderColor: 'border-emerald-200',
+        emoji: '💰'
       },
-      amber: {
-        bg: 'bg-amber-50',
-        border: 'border-amber-200',
-        text: 'text-amber-600',
-        hover: 'hover:bg-amber-100',
-        selected: 'border-amber-500 bg-amber-50'
+      percentage: {
+        icon: BarChart3,
+        label: 'Variação',
+        color: 'text-amber-600',
+        bgColor: 'bg-amber-50',
+        borderColor: 'border-amber-200',
+        emoji: '📊'
       },
-      purple: {
-        bg: 'bg-purple-50',
-        border: 'border-purple-200',
-        text: 'text-purple-600',
-        hover: 'hover:bg-purple-100',
-        selected: 'border-purple-500 bg-purple-50'
+      volume: {
+        icon: Volume2,
+        label: 'Volume',
+        color: 'text-purple-600',
+        bgColor: 'bg-purple-50',
+        borderColor: 'border-purple-200',
+        emoji: '📈'
       }
     };
-    return colors[color] || colors.emerald;
+    return configs[type] || configs.price;
   };
 
-  const selectedType = alertTypes.find(t => t.id === formData.alertType);
+  const formatValue = (alert) => {
+    if (alert.alert_type === 'price') {
+      return `R$ ${alert.target_value.toFixed(2)}`;
+    } else if (alert.alert_type === 'percentage') {
+      return `${alert.target_value > 0 ? '+' : ''}${alert.target_value}%`;
+    } else {
+      return alert.target_value.toLocaleString('pt-BR');
+    }
+  };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/20 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <button 
-            onClick={() => setStep(1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Voltar</span>
-          </button>
-          
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <Target className="w-6 h-6 text-white" />
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
+  const AlertCard = ({ alert, isHistory = false }) => {
+    const config = getAlertTypeConfig(alert.alert_type);
+    const Icon = config.icon;
+
+    return (
+      <div className={`group bg-white rounded-2xl p-6 border-2 ${
+        isHistory ? 'border-indigo-200 bg-gradient-to-br from-white to-indigo-50/30' : 'border-gray-100 hover:border-indigo-200'
+      } transition-all duration-300 hover:shadow-xl`}>
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className={`${config.bgColor} ${config.color} p-3 rounded-xl`}>
+              <Icon className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Criar Novo Alerta</h1>
-              <p className="text-gray-600">Configure um alerta personalizado para suas ações</p>
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl font-bold text-gray-900">{alert.ticker}</h3>
+                {isHistory ? (
+                  <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                    <CheckCircle className="w-3 h-3" />
+                    Disparado
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                    <Bell className="w-3 h-3" />
+                    Ativo
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{config.label}</p>
             </div>
+          </div>
+          
+          {!isHistory && (
+            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-lg text-red-600">
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-medium text-gray-600">Alvo:</span>
+            <span className="text-lg font-bold text-gray-900">
+              {alert.condition} {formatValue(alert)}
+            </span>
+          </div>
+
+          {alert.current_price && (
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm font-medium text-gray-600">Atual:</span>
+              <span className="text-lg font-semibold text-gray-700">
+                R$ {alert.current_price.toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          {alert.current_change !== undefined && (
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm font-medium text-gray-600">Variação:</span>
+              <span className={`text-lg font-semibold ${alert.current_change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {alert.current_change > 0 ? '+' : ''}{alert.current_change}%
+              </span>
+            </div>
+          )}
+
+          <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {formatDate(alert.created_at)}
+            </span>
+            {alert.triggered_at && (
+              <span className="text-indigo-600 font-medium">
+                Disparado: {formatDate(alert.triggered_at)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/20">
+      {/* Header */}
+      <nav className="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <Target className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Gatilho
+              </h1>
+            </div>
+            <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all">
+              <LogOut className="w-4 h-4" />
+              <span className="font-medium">Sair</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-500/20">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-emerald-100 text-sm font-medium">Ativos</p>
+              <CheckCircle className="w-5 h-5 text-emerald-200" />
+            </div>
+            <p className="text-4xl font-bold">{stats.active_alerts}</p>
+            <p className="text-emerald-100 text-xs mt-1">alertas monitorando</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-indigo-500/20">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-indigo-100 text-sm font-medium">Disparados</p>
+              <Bell className="w-5 h-5 text-indigo-200" />
+            </div>
+            <p className="text-4xl font-bold">{stats.triggered_alerts}</p>
+            <p className="text-indigo-100 text-xs mt-1">alertas acionados</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-500/20">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-purple-100 text-sm font-medium">Ações</p>
+              <TrendingUp className="w-5 h-5 text-purple-200" />
+            </div>
+            <p className="text-4xl font-bold">{stats.total_tickers}</p>
+            <p className="text-purple-100 text-xs mt-1">ativos diferentes</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg shadow-amber-500/20">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-amber-100 text-sm font-medium">Total</p>
+              <BarChart3 className="w-5 h-5 text-amber-200" />
+            </div>
+            <p className="text-4xl font-bold">{stats.total_alerts}</p>
+            <p className="text-amber-100 text-xs mt-1">alertas criados</p>
           </div>
         </div>
 
-        {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-8 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          {[1, 2, 3, 4].map((s, i) => (
-            <React.Fragment key={s}>
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                  step >= s 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-gray-100 text-gray-400'
-                }`}>
-                  {step > s ? <CheckCircle className="w-6 h-6" /> : s}
-                </div>
-                <div className="hidden md:block">
-                  <p className={`text-sm font-semibold ${step >= s ? 'text-gray-900' : 'text-gray-400'}`}>
-                    {s === 1 && 'Ação'}
-                    {s === 2 && 'Tipo'}
-                    {s === 3 && 'Condição'}
-                    {s === 4 && 'Valor'}
-                  </p>
-                </div>
-              </div>
-              {i < 3 && (
-                <div className={`flex-1 h-1 mx-4 rounded-full transition-all ${
-                  step > s ? 'bg-indigo-600' : 'bg-gray-200'
-                }`} />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-
-        {/* Form Container */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Meus Alertas</h2>
+            <p className="text-gray-600 mt-1">Configure e gerencie alertas para suas ações favoritas</p>
+          </div>
           
-          {/* Step 1: Selecionar Ação */}
-          {step === 1 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Qual ação você quer monitorar?</h2>
-                <p className="text-gray-600 mb-6">Selecione ou busque uma ação da B3</p>
-                
-                <input
-                  type="text"
-                  placeholder="🔍 Buscar ação... (ex: PETR4, Vale, Itaú)"
-                  value={searchTicker}
-                  onChange={(e) => setSearchTicker(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all mb-6"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {filteredStocks.map((stock) => (
-                  <button
-                    key={stock.ticker}
-                    onClick={() => {
-                      setFormData({ ...formData, ticker: stock.ticker });
-                      setErrors({ ...errors, ticker: null });
-                    }}
-                    className={`p-4 rounded-xl border-2 transition-all text-left ${
-                      formData.ticker === stock.ticker
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30'
-                    }`}
-                  >
-                    <p className="font-bold text-gray-900 text-lg">{stock.ticker}</p>
-                    <p className="text-sm text-gray-600 truncate">{stock.name}</p>
-                    <p className="text-xs text-gray-400 mt-1">{stock.sector}</p>
-                  </button>
-                ))}
-              </div>
-
-              {errors.ticker && (
-                <p className="text-red-600 text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.ticker}
-                </p>
-              )}
-
-              <button
-                onClick={() => formData.ticker && setStep(2)}
-                disabled={!formData.ticker}
-                className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
-              >
-                Continuar
-              </button>
-            </div>
-          )}
-
-          {/* Step 2: Tipo de Alerta */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Que tipo de alerta você quer?</h2>
-                <p className="text-gray-600 mb-6">Escolha o indicador que deseja monitorar</p>
-              </div>
-
-              <div className="space-y-4">
-                {alertTypes.map((type) => {
-                  const Icon = type.icon;
-                  const colors = getColorClasses(type.color);
-                  
-                  return (
-                    <button
-                      key={type.id}
-                      onClick={() => {
-                        setFormData({ ...formData, alertType: type.id });
-                        setErrors({ ...errors, alertType: null });
-                      }}
-                      className={`w-full p-6 rounded-xl border-2 transition-all text-left flex items-start gap-4 ${
-                        formData.alertType === type.id
-                          ? colors.selected
-                          : `border-gray-200 ${colors.hover}`
-                      }`}
-                    >
-                      <div className={`${colors.bg} ${colors.text} p-3 rounded-xl`}>
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 text-lg mb-1">{type.name}</h3>
-                        <p className="text-gray-600 text-sm mb-2">{type.description}</p>
-                        <p className="text-xs text-gray-400 font-mono">{type.example}</p>
-                      </div>
-                      {formData.alertType === type.id && (
-                        <CheckCircle className="w-6 h-6 text-indigo-600" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {errors.alertType && (
-                <p className="text-red-600 text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.alertType}
-                </p>
-              )}
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-all"
-                >
-                  Voltar
-                </button>
-                <button
-                  onClick={() => formData.alertType && setStep(3)}
-                  disabled={!formData.alertType}
-                  className="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  Continuar
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Condição */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Qual condição para disparar?</h2>
-                <p className="text-gray-600 mb-6">Defina quando o alerta deve ser acionado</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {conditions.map((cond) => (
-                  <button
-                    key={cond.value}
-                    onClick={() => {
-                      setFormData({ ...formData, condition: cond.value });
-                      setErrors({ ...errors, condition: null });
-                    }}
-                    className={`p-6 rounded-xl border-2 transition-all text-left ${
-                      formData.condition === cond.value
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-3xl font-bold text-indigo-600">{cond.value}</span>
-                      {formData.condition === cond.value && (
-                        <CheckCircle className="w-6 h-6 text-indigo-600" />
-                      )}
-                    </div>
-                    <h3 className="font-bold text-gray-900 mb-1">{cond.label}</h3>
-                    <p className="text-sm text-gray-600">{cond.desc}</p>
-                  </button>
-                ))}
-              </div>
-
-              {errors.condition && (
-                <p className="text-red-600 text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.condition}
-                </p>
-              )}
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setStep(2)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-all"
-                >
-                  Voltar
-                </button>
-                <button
-                  onClick={() => formData.condition && setStep(4)}
-                  disabled={!formData.condition}
-                  className="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  Continuar
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Valor Alvo */}
-          {step === 4 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Qual o valor alvo?</h2>
-                <p className="text-gray-600 mb-6">
-                  Digite o valor que {formData.condition === '>' || formData.condition === '>=' ? 'aciona' : 'dispara'} o alerta
-                </p>
-              </div>
-
-              {/* Preview Card */}
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border-2 border-indigo-200">
-                <p className="text-sm text-indigo-600 font-semibold mb-2">Resumo do Alerta</p>
-                <div className="flex items-baseline gap-2 text-2xl font-bold text-gray-900">
-                  <span>{formData.ticker}</span>
-                  <span className="text-indigo-600">{formData.condition}</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={formData.targetValue}
-                    onChange={(e) => {
-                      setFormData({ ...formData, targetValue: e.target.value });
-                      setErrors({ ...errors, targetValue: null });
-                    }}
-                    className="flex-1 px-4 py-2 border-2 border-indigo-300 rounded-lg bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
-                  />
-                  <span className="text-gray-600 text-lg">
-                    {formData.alertType === 'price' && 'R$'}
-                    {formData.alertType === 'percentage' && '%'}
-                  </span>
-                </div>
-                {selectedType && (
-                  <p className="text-sm text-gray-600 mt-3">
-                    Tipo: {selectedType.name}
-                  </p>
-                )}
-              </div>
-
-              {errors.targetValue && (
-                <p className="text-red-600 text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.targetValue}
-                </p>
-              )}
-
-              {/* Quick Values */}
-              {formData.alertType === 'percentage' && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700">Sugestões rápidas:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {[-10, -5, -3, 3, 5, 10].map(val => (
-                      <button
-                        key={val}
-                        onClick={() => setFormData({ ...formData, targetValue: val.toString() })}
-                        className="px-4 py-2 bg-gray-100 hover:bg-indigo-100 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        {val > 0 ? '+' : ''}{val}%
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setStep(3)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-all"
-                >
-                  Voltar
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={!formData.targetValue}
-                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
-                >
-                  Criar Alerta
-                </button>
-              </div>
-            </div>
-          )}
+          <button 
+            onClick={() => setShowNewAlertModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 transform hover:scale-105"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Alerta
+          </button>
         </div>
 
-        {/* Success Modal */}
-        {showSuccess && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-10 h-10 text-emerald-600" />
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all ${
+              activeTab === 'active'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Bell className="w-4 h-4" />
+            Ativos
+            <span className={`px-2 py-0.5 rounded-full text-xs ${
+              activeTab === 'active' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
+            }`}>
+              {alerts.length}
+            </span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all ${
+              activeTab === 'history'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            Histórico
+            <span className={`px-2 py-0.5 rounded-full text-xs ${
+              activeTab === 'history' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
+            }`}>
+              {history.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Content */}
+        {activeTab === 'active' && (
+          <div className="space-y-4">
+            {alerts.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Nenhum alerta ativo
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Comece criando seu primeiro alerta para monitorar ações
+                </p>
+                <button 
+                  onClick={() => setShowNewAlertModal(true)}
+                  className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-all"
+                >
+                  <Plus className="w-5 h-5" />
+                  Criar Primeiro Alerta
+                </button>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Alerta Criado!</h3>
-              <p className="text-gray-600">
-                Você será notificado quando {formData.ticker} {formData.condition} {formData.targetValue}
-              </p>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {alerts.map(alert => (
+                  <AlertCard key={alert.id} alert={alert} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            {history.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <History className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Nenhum histórico ainda
+                </h3>
+                <p className="text-gray-500">
+                  Quando seus alertas forem disparados, eles aparecerão aqui
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {history.map(alert => (
+                  <AlertCard key={alert.id} alert={alert} isHistory />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Modal "Novo Alerta" - apenas placeholder visual */}
+      {showNewAlertModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Novo Alerta</h3>
+            <p className="text-gray-600 mb-6">
+              Use a página /alerts/new no projeto real para criar alertas
+            </p>
+            <button
+              onClick={() => setShowNewAlertModal(false)}
+              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-all"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default NewAlertForm;
+export default GatilhoDashboard;

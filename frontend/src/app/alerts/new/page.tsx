@@ -1,20 +1,64 @@
+'use client';
 import React, { useState } from 'react';
 import { ArrowLeft, TrendingUp, BarChart3, Volume2, AlertCircle, CheckCircle, DollarSign, Percent, Target } from 'lucide-react';
 
+interface FormData {
+  ticker: string;
+  alertType: string;
+  condition: string;
+  targetValue: string;
+}
+
+interface Errors {
+  ticker?: string;
+  alertType?: string;
+  condition?: string;
+  targetValue?: string;
+}
+
+interface Stock {
+  ticker: string;
+  name: string;
+  sector: string;
+}
+
+interface AlertType {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: 'emerald' | 'amber' | 'purple';
+  example: string;
+}
+
+interface Condition {
+  value: string;
+  label: string;
+  desc: string;
+}
+
+interface ColorClasses {
+  bg: string;
+  border: string;
+  text: string;
+  hover: string;
+  selected: string;
+}
+
 const NewAlertForm = () => {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     ticker: '',
     alertType: '',
     condition: '',
     targetValue: ''
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Errors>({});
   const [searchTicker, setSearchTicker] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const popularStocks = [
+  const popularStocks: Stock[] = [
     { ticker: 'PETR4', name: 'Petrobras', sector: 'Petróleo' },
     { ticker: 'VALE3', name: 'Vale', sector: 'Mineração' },
     { ticker: 'ITUB4', name: 'Itaú', sector: 'Bancos' },
@@ -25,7 +69,7 @@ const NewAlertForm = () => {
     { ticker: 'RENT3', name: 'Localiza', sector: 'Locação' }
   ];
 
-  const alertTypes = [
+  const alertTypes: AlertType[] = [
     {
       id: 'price',
       name: 'Preço',
@@ -52,7 +96,7 @@ const NewAlertForm = () => {
     }
   ];
 
-  const conditions = [
+  const conditions: Condition[] = [
     { value: '>', label: 'Maior que (>)', desc: 'Ativa quando subir acima do alvo' },
     { value: '<', label: 'Menor que (<)', desc: 'Ativa quando cair abaixo do alvo' },
     { value: '>=', label: 'Maior ou igual (≥)', desc: 'Ativa quando atingir ou superar' },
@@ -65,7 +109,7 @@ const NewAlertForm = () => {
   );
 
   const handleSubmit = () => {
-    const newErrors = {};
+    const newErrors: Errors = {};
     if (!formData.ticker) newErrors.ticker = 'Selecione uma ação';
     if (!formData.alertType) newErrors.alertType = 'Selecione o tipo de alerta';
     if (!formData.condition) newErrors.condition = 'Selecione uma condição';
@@ -84,8 +128,8 @@ const NewAlertForm = () => {
     }, 2000);
   };
 
-  const getColorClasses = (color) => {
-    const colors = {
+  const getColorClasses = (color: 'emerald' | 'amber' | 'purple'): ColorClasses => {
+    const colors: Record<'emerald' | 'amber' | 'purple', ColorClasses> = {
       emerald: {
         bg: 'bg-emerald-50',
         border: 'border-emerald-200',
@@ -108,7 +152,7 @@ const NewAlertForm = () => {
         selected: 'border-purple-500 bg-purple-50'
       }
     };
-    return colors[color] || colors.emerald;
+    return colors[color];
   };
 
   const selectedType = alertTypes.find(t => t.id === formData.alertType);
@@ -192,7 +236,7 @@ const NewAlertForm = () => {
                     key={stock.ticker}
                     onClick={() => {
                       setFormData({ ...formData, ticker: stock.ticker });
-                      setErrors({ ...errors, ticker: null });
+                      setErrors({ ...errors, ticker: undefined });
                     }}
                     className={`p-4 rounded-xl border-2 transition-all text-left ${
                       formData.ticker === stock.ticker
@@ -242,7 +286,7 @@ const NewAlertForm = () => {
                       key={type.id}
                       onClick={() => {
                         setFormData({ ...formData, alertType: type.id });
-                        setErrors({ ...errors, alertType: null });
+                        setErrors({ ...errors, alertType: undefined });
                       }}
                       className={`w-full p-6 rounded-xl border-2 transition-all text-left flex items-start gap-4 ${
                         formData.alertType === type.id
@@ -305,7 +349,7 @@ const NewAlertForm = () => {
                     key={cond.value}
                     onClick={() => {
                       setFormData({ ...formData, condition: cond.value });
-                      setErrors({ ...errors, condition: null });
+                      setErrors({ ...errors, condition: undefined });
                     }}
                     className={`p-6 rounded-xl border-2 transition-all text-left ${
                       formData.condition === cond.value
@@ -373,7 +417,7 @@ const NewAlertForm = () => {
                     value={formData.targetValue}
                     onChange={(e) => {
                       setFormData({ ...formData, targetValue: e.target.value });
-                      setErrors({ ...errors, targetValue: null });
+                      setErrors({ ...errors, targetValue: undefined });
                     }}
                     className="flex-1 px-4 py-2 border-2 border-indigo-300 rounded-lg bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
                   />
@@ -404,6 +448,7 @@ const NewAlertForm = () => {
                     {[-10, -5, -3, 3, 5, 10].map(val => (
                       <button
                         key={val}
+                        type="button"
                         onClick={() => setFormData({ ...formData, targetValue: val.toString() })}
                         className="px-4 py-2 bg-gray-100 hover:bg-indigo-100 rounded-lg text-sm font-medium transition-colors"
                       >

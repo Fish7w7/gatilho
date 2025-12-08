@@ -1,15 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, TrendingUp, TrendingDown, Volume2, Plus, Trash2, History, LogOut, AlertCircle, CheckCircle, Clock, BarChart3, Target } from 'lucide-react';
+'use client';
+import React, { useState } from 'react';
+import { Bell, TrendingUp, Volume2, Plus, Trash2, History, LogOut, AlertCircle, CheckCircle, Clock, BarChart3, Target } from 'lucide-react';
 
-// Mock data para demonstração
-const mockStats = {
+// Tipos
+interface Alert {
+  id: number;
+  ticker: string;
+  alert_type: string;
+  target_value: number;
+  condition: string;
+  is_active: boolean;
+  triggered: boolean;
+  created_at: string;
+  triggered_at?: string;
+  current_price?: number;
+  current_change?: number;
+  current_volume?: number;
+}
+
+interface Stats {
+  total_alerts: number;
+  active_alerts: number;
+  triggered_alerts: number;
+  total_tickers: number;
+}
+
+interface AlertConfig {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  emoji: string;
+}
+
+// Mock data
+const mockStats: Stats = {
   total_alerts: 12,
   active_alerts: 8,
   triggered_alerts: 4,
   total_tickers: 6
 };
 
-const mockAlerts = [
+const mockAlerts: Alert[] = [
   {
     id: 1,
     ticker: "PETR4",
@@ -45,7 +78,7 @@ const mockAlerts = [
   }
 ];
 
-const mockHistory = [
+const mockHistory: Alert[] = [
   {
     id: 4,
     ticker: "ITUB4",
@@ -56,29 +89,18 @@ const mockHistory = [
     triggered: true,
     created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
     triggered_at: new Date(Date.now() - 86400000).toISOString()
-  },
-  {
-    id: 5,
-    ticker: "MGLU3",
-    alert_type: "percentage",
-    target_value: 8,
-    condition: ">",
-    is_active: false,
-    triggered: true,
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-    triggered_at: new Date(Date.now() - 86400000 * 3).toISOString()
   }
 ];
 
 const GatilhoDashboard = () => {
-  const [activeTab, setActiveTab] = useState('active');
-  const [alerts, setAlerts] = useState(mockAlerts);
-  const [history, setHistory] = useState(mockHistory);
-  const [stats, setStats] = useState(mockStats);
+  const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
+  const [alerts] = useState<Alert[]>(mockAlerts);
+  const [history] = useState<Alert[]>(mockHistory);
+  const [stats] = useState<Stats>(mockStats);
   const [showNewAlertModal, setShowNewAlertModal] = useState(false);
 
-  const getAlertTypeConfig = (type) => {
-    const configs = {
+  const getAlertTypeConfig = (type: string): AlertConfig => {
+    const configs: Record<string, AlertConfig> = {
       price: {
         icon: TrendingUp,
         label: 'Preço',
@@ -107,7 +129,7 @@ const GatilhoDashboard = () => {
     return configs[type] || configs.price;
   };
 
-  const formatValue = (alert) => {
+  const formatValue = (alert: Alert): string => {
     if (alert.alert_type === 'price') {
       return `R$ ${alert.target_value.toFixed(2)}`;
     } else if (alert.alert_type === 'percentage') {
@@ -117,7 +139,7 @@ const GatilhoDashboard = () => {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
@@ -128,7 +150,7 @@ const GatilhoDashboard = () => {
     }).format(date);
   };
 
-  const AlertCard = ({ alert, isHistory = false }) => {
+  const AlertCard = ({ alert, isHistory = false }: { alert: Alert; isHistory?: boolean }) => {
     const config = getAlertTypeConfig(alert.alert_type);
     const Icon = config.icon;
 
@@ -180,226 +202,220 @@ const GatilhoDashboard = () => {
               <span className="text-sm font-medium text-gray-600">Atual:</span>
               <span className="text-lg font-semibold text-gray-700">
                 R$ {alert.current_price.toFixed(2)}
-              </span>
-            </div>
-          )}
-
-          {alert.current_change !== undefined && (
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm font-medium text-gray-600">Variação:</span>
-              <span className={`text-lg font-semibold ${alert.current_change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                {alert.current_change > 0 ? '+' : ''}{alert.current_change}%
-              </span>
-            </div>
-          )}
-
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {formatDate(alert.created_at)}
-            </span>
-            {alert.triggered_at && (
-              <span className="text-indigo-600 font-medium">
-                Disparado: {formatDate(alert.triggered_at)}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/20">
-      {/* Header */}
-      <nav className="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <Target className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Gatilho
-              </h1>
-            </div>
-            <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all">
-              <LogOut className="w-4 h-4" />
-              <span className="font-medium">Sair</span>
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-500/20">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-emerald-100 text-sm font-medium">Ativos</p>
-              <CheckCircle className="w-5 h-5 text-emerald-200" />
-            </div>
-            <p className="text-4xl font-bold">{stats.active_alerts}</p>
-            <p className="text-emerald-100 text-xs mt-1">alertas monitorando</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-indigo-500/20">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-indigo-100 text-sm font-medium">Disparados</p>
-              <Bell className="w-5 h-5 text-indigo-200" />
-            </div>
-            <p className="text-4xl font-bold">{stats.triggered_alerts}</p>
-            <p className="text-indigo-100 text-xs mt-1">alertas acionados</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-500/20">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-purple-100 text-sm font-medium">Ações</p>
-              <TrendingUp className="w-5 h-5 text-purple-200" />
-            </div>
-            <p className="text-4xl font-bold">{stats.total_tickers}</p>
-            <p className="text-purple-100 text-xs mt-1">ativos diferentes</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg shadow-amber-500/20">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-amber-100 text-sm font-medium">Total</p>
-              <BarChart3 className="w-5 h-5 text-amber-200" />
-            </div>
-            <p className="text-4xl font-bold">{stats.total_alerts}</p>
-            <p className="text-amber-100 text-xs mt-1">alertas criados</p>
-          </div>
-        </div>
-
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900">Meus Alertas</h2>
-            <p className="text-gray-600 mt-1">Configure e gerencie alertas para suas ações favoritas</p>
-          </div>
-          
-          <button 
-            onClick={() => setShowNewAlertModal(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 transform hover:scale-105"
-          >
-            <Plus className="w-5 h-5" />
-            Novo Alerta
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-4 mb-8 border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('active')}
-            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all ${
-              activeTab === 'active'
-                ? 'text-indigo-600 border-b-2 border-indigo-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Bell className="w-4 h-4" />
-            Ativos
-            <span className={`px-2 py-0.5 rounded-full text-xs ${
-              activeTab === 'active' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
-            }`}>
-              {alerts.length}
-            </span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all ${
-              activeTab === 'history'
-                ? 'text-indigo-600 border-b-2 border-indigo-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <History className="w-4 h-4" />
-            Histórico
-            <span className={`px-2 py-0.5 rounded-full text-xs ${
-              activeTab === 'history' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
-            }`}>
-              {history.length}
-            </span>
-          </button>
-        </div>
-
-        {/* Content */}
-        {activeTab === 'active' && (
-          <div className="space-y-4">
-            {alerts.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="w-10 h-10 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Nenhum alerta ativo
-                </h3>
-                <p className="text-gray-500 mb-6">
-                  Comece criando seu primeiro alerta para monitorar ações
-                </p>
-                <button 
-                  onClick={() => setShowNewAlertModal(true)}
-                  className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-all"
-                >
-                  <Plus className="w-5 h-5" />
-                  Criar Primeiro Alerta
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {alerts.map(alert => (
-                  <AlertCard key={alert.id} alert={alert} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'history' && (
-          <div className="space-y-4">
-            {history.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <History className="w-10 h-10 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Nenhum histórico ainda
-                </h3>
-                <p className="text-gray-500">
-                  Quando seus alertas forem disparados, eles aparecerão aqui
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {history.map(alert => (
-                  <AlertCard key={alert.id} alert={alert} isHistory />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Modal "Novo Alerta" - apenas placeholder visual */}
-      {showNewAlertModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Novo Alerta</h3>
-            <p className="text-gray-600 mb-6">
-              Use a página /alerts/new no projeto real para criar alertas
-            </p>
-            <button
-              onClick={() => setShowNewAlertModal(false)}
-              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-all"
-            >
-              Fechar
-            </button>
-          </div>
+          </span>
         </div>
       )}
+      {alert.current_change !== undefined && (
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm font-medium text-gray-600">Variação:</span>
+          <span className={`text-lg font-semibold ${alert.current_change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+            {alert.current_change > 0 ? '+' : ''}{alert.current_change}%
+          </span>
+        </div>
+      )}
+      <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+        <span className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {formatDate(alert.created_at)}
+        </span>
+        {alert.triggered_at && (
+          <span className="text-indigo-600 font-medium">
+            Disparado: {formatDate(alert.triggered_at)}
+          </span>
+        )}
+      </div>
     </div>
-  );
-};
+  </div>
+);
+};return (
+<div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/20">
+{/* Header */}
+<nav className="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50">
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div className="flex justify-between items-center h-16">
+<div className="flex items-center gap-3">
+<div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+<Target className="w-6 h-6 text-white" />
+</div>
+<h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+Gatilho
+</h1>
+</div>
+<button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all">
+<LogOut className="w-4 h-4" />
+<span className="font-medium">Sair</span>
+</button>
+</div>
+</div>
+</nav>
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {/* Stats Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-500/20">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-emerald-100 text-sm font-medium">Ativos</p>
+          <CheckCircle className="w-5 h-5 text-emerald-200" />
+        </div>
+        <p className="text-4xl font-bold">{stats.active_alerts}</p>
+        <p className="text-emerald-100 text-xs mt-1">alertas monitorando</p>
+      </div>
 
+      <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-indigo-500/20">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-indigo-100 text-sm font-medium">Disparados</p>
+          <Bell className="w-5 h-5 text-indigo-200" />
+        </div>
+        <p className="text-4xl font-bold">{stats.triggered_alerts}</p>
+        <p className="text-indigo-100 text-xs mt-1">alertas acionados</p>
+      </div>
+
+      <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-500/20">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-purple-100 text-sm font-medium">Ações</p>
+          <TrendingUp className="w-5 h-5 text-purple-200" />
+        </div>
+        <p className="text-4xl font-bold">{stats.total_tickers}</p>
+        <p className="text-purple-100 text-xs mt-1">ativos diferentes</p>
+      </div>
+
+      <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg shadow-amber-500/20">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-amber-100 text-sm font-medium">Total</p>
+          <BarChart3 className="w-5 h-5 text-amber-200" />
+        </div>
+        <p className="text-4xl font-bold">{stats.total_alerts}</p>
+        <p className="text-amber-100 text-xs mt-1">alertas criados</p>
+      </div>
+    </div>
+
+    {/* Header Section */}
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div>
+        <h2 className="text-3xl font-bold text-gray-900">Meus Alertas</h2>
+        <p className="text-gray-600 mt-1">Configure e gerencie alertas para suas ações favoritas</p>
+      </div>
+      
+      <button 
+        onClick={() => setShowNewAlertModal(true)}
+        className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 transform hover:scale-105"
+      >
+        <Plus className="w-5 h-5" />
+        Novo Alerta
+      </button>
+    </div>
+
+    {/* Tabs */}
+    <div className="flex gap-4 mb-8 border-b border-gray-200">
+      <button
+        onClick={() => setActiveTab('active')}
+        className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all ${
+          activeTab === 'active'
+            ? 'text-indigo-600 border-b-2 border-indigo-600'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        <Bell className="w-4 h-4" />
+        Ativos
+        <span className={`px-2 py-0.5 rounded-full text-xs ${
+          activeTab === 'active' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
+        }`}>
+          {alerts.length}
+        </span>
+      </button>
+      
+      <button
+        onClick={() => setActiveTab('history')}
+        className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all ${
+          activeTab === 'history'
+            ? 'text-indigo-600 border-b-2 border-indigo-600'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        <History className="w-4 h-4" />
+        Histórico
+        <span className={`px-2 py-0.5 rounded-full text-xs ${
+          activeTab === 'history' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
+        }`}>
+          {history.length}
+        </span>
+      </button>
+    </div>
+
+    {/* Content */}
+    {activeTab === 'active' && (
+      <div className="space-y-4">
+        {alerts.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Nenhum alerta ativo
+            </h3>
+            <p className="text-gray-500 mb-6">
+              Comece criando seu primeiro alerta para monitorar ações
+            </p>
+            <button 
+              onClick={() => setShowNewAlertModal(true)}
+              className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              Criar Primeiro Alerta
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {alerts.map(alert => (
+              <AlertCard key={alert.id} alert={alert} />
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+
+    {activeTab === 'history' && (
+      <div className="space-y-4">
+        {history.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <History className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Nenhum histórico ainda
+            </h3>
+            <p className="text-gray-500">
+              Quando seus alertas forem disparados, eles aparecerão aqui
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {history.map(alert => (
+              <AlertCard key={alert.id} alert={alert} isHistory />
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+
+  {/* Modal "Novo Alerta" */}
+  {showNewAlertModal && (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <h3 className="text-2xl font-bold text-gray-900 mb-4">Novo Alerta</h3>
+        <p className="text-gray-600 mb-6">
+          Use a página /alerts/new no projeto real para criar alertas
+        </p>
+        <button
+          onClick={() => setShowNewAlertModal(false)}
+          className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-all"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+  )}
+</div>
+);
+};
 export default GatilhoDashboard;

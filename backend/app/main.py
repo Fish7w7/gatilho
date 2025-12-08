@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from .core.database import engine, Base
 from .api import auth, alerts
+from .websocket import manager
 
 # Cria as tabelas no banco
 Base.metadata.create_all(bind=engine)
@@ -49,3 +50,12 @@ async def log_requests(request, call_next):
     response = await call_next(request)
     print(f"✅ Status: {response.status_code}")
     return response
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    await manager.connect(websocket, user_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Mantém conexão ativa
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)

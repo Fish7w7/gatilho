@@ -22,17 +22,3 @@ class ConnectionManager:
                 await connection.send_json(message)
 
 manager = ConnectionManager()
-
-# No main.py:
-from fastapi import WebSocket
-from .websocket import manager
-
-@app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int):
-    await manager.connect(websocket, user_id)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            # Mantém conexão ativa
-    except WebSocketDisconnect:
-        manager.disconnect(websocket, user_id)

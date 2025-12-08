@@ -1,26 +1,16 @@
 import React, { useState } from 'react';
 import { ArrowLeft, TrendingUp, BarChart3, Volume2, AlertCircle, CheckCircle, DollarSign, Percent, Target } from 'lucide-react';
-import { AlertType, Condition, ColorKey } from '../../types';
-import { getColorClasses } from '../../utils/colors';
 
 const NewAlertForm = () => {
   const [step, setStep] = useState(1);
-
-  interface FormData {
-    ticker: string;
-    alertType: AlertType | '';
-    condition: Condition | '';
-    targetValue: string;
-  }
-
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     ticker: '',
     alertType: '',
     condition: '',
     targetValue: ''
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [errors, setErrors] = useState({});
   const [searchTicker, setSearchTicker] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -35,7 +25,7 @@ const NewAlertForm = () => {
     { ticker: 'RENT3', name: 'Localiza', sector: 'Locação' }
   ];
 
-  const alertTypes: { id: AlertType, name: string, description: string, icon: React.ElementType, color: ColorKey, example: string }[] = [
+  const alertTypes = [
     {
       id: 'price',
       name: 'Preço',
@@ -62,7 +52,7 @@ const NewAlertForm = () => {
     }
   ];
 
-  const conditions: { value: Condition, label: string, desc: string }[] = [
+  const conditions = [
     { value: '>', label: 'Maior que (>)', desc: 'Ativa quando subir acima do alvo' },
     { value: '<', label: 'Menor que (<)', desc: 'Ativa quando cair abaixo do alvo' },
     { value: '>=', label: 'Maior ou igual (≥)', desc: 'Ativa quando atingir ou superar' },
@@ -75,7 +65,7 @@ const NewAlertForm = () => {
   );
 
   const handleSubmit = () => {
-    const newErrors: Partial<Record<keyof FormData, string>> = {};
+    const newErrors = {};
     if (!formData.ticker) newErrors.ticker = 'Selecione uma ação';
     if (!formData.alertType) newErrors.alertType = 'Selecione o tipo de alerta';
     if (!formData.condition) newErrors.condition = 'Selecione uma condição';
@@ -94,7 +84,34 @@ const NewAlertForm = () => {
     }, 2000);
   };
 
-  const selectedType = alertTypes.find(t => t.id === formData.alertType) as typeof alertTypes[number] | undefined;
+  const getColorClasses = (color) => {
+    const colors = {
+      emerald: {
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-200',
+        text: 'text-emerald-600',
+        hover: 'hover:bg-emerald-100',
+        selected: 'border-emerald-500 bg-emerald-50'
+      },
+      amber: {
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        text: 'text-amber-600',
+        hover: 'hover:bg-amber-100',
+        selected: 'border-amber-500 bg-amber-50'
+      },
+      purple: {
+        bg: 'bg-purple-50',
+        border: 'border-purple-200',
+        text: 'text-purple-600',
+        hover: 'hover:bg-purple-100',
+        selected: 'border-purple-500 bg-purple-50'
+      }
+    };
+    return colors[color] || colors.emerald;
+  };
+
+  const selectedType = alertTypes.find(t => t.id === formData.alertType);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/20 py-8">
@@ -174,8 +191,8 @@ const NewAlertForm = () => {
                   <button
                     key={stock.ticker}
                     onClick={() => {
-                      setFormData(prev => ({ ...prev, ticker: stock.ticker }));
-                      setErrors(prev => ({ ...prev, ticker: undefined }));
+                      setFormData({ ...formData, ticker: stock.ticker });
+                      setErrors({ ...errors, ticker: null });
                     }}
                     className={`p-4 rounded-xl border-2 transition-all text-left ${
                       formData.ticker === stock.ticker
@@ -224,8 +241,8 @@ const NewAlertForm = () => {
                     <button
                       key={type.id}
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, alertType: type.id }));
-                        setErrors(prev => ({ ...prev, alertType: undefined }));
+                        setFormData({ ...formData, alertType: type.id });
+                        setErrors({ ...errors, alertType: null });
                       }}
                       className={`w-full p-6 rounded-xl border-2 transition-all text-left flex items-start gap-4 ${
                         formData.alertType === type.id
@@ -256,18 +273,17 @@ const NewAlertForm = () => {
                 </p>
               )}
 
-              <div className="flex justify-between mt-6">
+              <div className="flex gap-4">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all"
+                  className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-all"
                 >
-                  <ArrowLeft className="w-5 h-5" />
                   Voltar
                 </button>
                 <button
                   onClick={() => formData.alertType && setStep(3)}
                   disabled={!formData.alertType}
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                  className="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Continuar
                 </button>
@@ -276,29 +292,35 @@ const NewAlertForm = () => {
           )}
 
           {/* Step 3: Condição */}
-          {step === 3 && selectedType && (
+          {step === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Defina a Condição</h2>
-                <p className="text-gray-600 mb-6">Quando o {selectedType.name.toLowerCase()} deve disparar o alerta?</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Qual condição para disparar?</h2>
+                <p className="text-gray-600 mb-6">Defina quando o alerta deve ser acionado</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {conditions.map((condition) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {conditions.map((cond) => (
                   <button
-                    key={condition.value}
+                    key={cond.value}
                     onClick={() => {
-                      setFormData(prev => ({ ...prev, condition: condition.value }));
-                      setErrors(prev => ({ ...prev, condition: undefined }));
+                      setFormData({ ...formData, condition: cond.value });
+                      setErrors({ ...errors, condition: null });
                     }}
-                    className={`p-4 rounded-xl border-2 transition-all text-left ${
-                      formData.condition === condition.value
+                    className={`p-6 rounded-xl border-2 transition-all text-left ${
+                      formData.condition === cond.value
                         ? 'border-indigo-500 bg-indigo-50'
                         : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30'
                     }`}
                   >
-                    <p className="font-bold text-gray-900 text-lg">{condition.label}</p>
-                    <p className="text-sm text-gray-600">{condition.desc}</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-3xl font-bold text-indigo-600">{cond.value}</span>
+                      {formData.condition === cond.value && (
+                        <CheckCircle className="w-6 h-6 text-indigo-600" />
+                      )}
+                    </div>
+                    <h3 className="font-bold text-gray-900 mb-1">{cond.label}</h3>
+                    <p className="text-sm text-gray-600">{cond.desc}</p>
                   </button>
                 ))}
               </div>
@@ -310,18 +332,17 @@ const NewAlertForm = () => {
                 </p>
               )}
 
-              <div className="flex justify-between mt-6">
+              <div className="flex gap-4">
                 <button
                   onClick={() => setStep(2)}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all"
+                  className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-all"
                 >
-                  <ArrowLeft className="w-5 h-5" />
                   Voltar
                 </button>
                 <button
                   onClick={() => formData.condition && setStep(4)}
                   disabled={!formData.condition}
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                  className="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Continuar
                 </button>
@@ -330,30 +351,42 @@ const NewAlertForm = () => {
           )}
 
           {/* Step 4: Valor Alvo */}
-          {step === 4 && selectedType && (
+          {step === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Qual o Valor Alvo?</h2>
-                <p className="text-gray-600 mb-6">Digite o valor que o {selectedType.name.toLowerCase()} deve atingir.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Qual o valor alvo?</h2>
+                <p className="text-gray-600 mb-6">
+                  Digite o valor que {formData.condition === '>' || formData.condition === '>=' ? 'aciona' : 'dispara'} o alerta
+                </p>
               </div>
 
-              <div className="relative">
-                <input
-                  type="number"
-                  step={selectedType.id === 'price' ? "0.01" : "1"}
-                  placeholder={selectedType.example.split(' ')[2]}
-                  value={formData.targetValue}
-                  onChange={(e) => {
-                    setFormData(prev => ({ ...prev, targetValue: e.target.value }));
-                    setErrors(prev => ({ ...prev, targetValue: undefined }));
-                  }}
-                  className="w-full px-4 py-3 pl-12 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-lg"
-                />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  {selectedType.id === 'price' && <DollarSign className="w-5 h-5" />}
-                  {selectedType.id === 'percentage' && <Percent className="w-5 h-5" />}
-                  {selectedType.id === 'volume' && <Volume2 className="w-5 h-5" />}
+              {/* Preview Card */}
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border-2 border-indigo-200">
+                <p className="text-sm text-indigo-600 font-semibold mb-2">Resumo do Alerta</p>
+                <div className="flex items-baseline gap-2 text-2xl font-bold text-gray-900">
+                  <span>{formData.ticker}</span>
+                  <span className="text-indigo-600">{formData.condition}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.targetValue}
+                    onChange={(e) => {
+                      setFormData({ ...formData, targetValue: e.target.value });
+                      setErrors({ ...errors, targetValue: null });
+                    }}
+                    className="flex-1 px-4 py-2 border-2 border-indigo-300 rounded-lg bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                  />
+                  <span className="text-gray-600 text-lg">
+                    {formData.alertType === 'price' && 'R$'}
+                    {formData.alertType === 'percentage' && '%'}
+                  </span>
                 </div>
+                {selectedType && (
+                  <p className="text-sm text-gray-600 mt-3">
+                    Tipo: {selectedType.name}
+                  </p>
+                )}
               </div>
 
               {errors.targetValue && (
@@ -363,35 +396,57 @@ const NewAlertForm = () => {
                 </p>
               )}
 
-              <div className="flex justify-between mt-6">
+              {/* Quick Values */}
+              {formData.alertType === 'percentage' && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Sugestões rápidas:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[-10, -5, -3, 3, 5, 10].map(val => (
+                      <button
+                        key={val}
+                        onClick={() => setFormData({ ...formData, targetValue: val.toString() })}
+                        className="px-4 py-2 bg-gray-100 hover:bg-indigo-100 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        {val > 0 ? '+' : ''}{val}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4">
                 <button
                   onClick={() => setStep(3)}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all"
+                  className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-all"
                 >
-                  <ArrowLeft className="w-5 h-5" />
                   Voltar
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={!formData.targetValue || Object.keys(errors).some(k => errors[k as keyof FormData])}
-                  className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 flex items-center gap-2"
+                  disabled={!formData.targetValue}
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
                 >
-                  <CheckCircle className="w-5 h-5" />
                   Criar Alerta
                 </button>
               </div>
             </div>
           )}
-
-          {/* Success Message */}
-          {showSuccess && (
-            <div className="text-center py-12">
-              <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Alerta Criado com Sucesso!</h2>
-              <p className="text-gray-600">Seu alerta para {formData.ticker} foi ativado e está sendo monitorado.</p>
-            </div>
-          )}
         </div>
+
+        {/* Success Modal */}
+        {showSuccess && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-emerald-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Alerta Criado!</h3>
+              <p className="text-gray-600">
+                Você será notificado quando {formData.ticker} {formData.condition} {formData.targetValue}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

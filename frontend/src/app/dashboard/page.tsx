@@ -1,74 +1,72 @@
-import React, { useState } from 'react';
-import { Bell, TrendingUp, Volume2, Plus, Trash2, History, LogOut, AlertCircle, CheckCircle, Clock, BarChart3, Target, DollarSign, Percent } from 'lucide-react';
-import { Alert, AlertType, AlertTypeConfig, AlertHistory, AlertStats } from '../../types';
-import { getColorClasses } from '../../utils/colors';
+import React, { useState, useEffect } from 'react';
+import { Bell, TrendingUp, TrendingDown, Volume2, Plus, Trash2, History, LogOut, AlertCircle, CheckCircle, Clock, BarChart3, Target } from 'lucide-react';
 
 // Mock data para demonstração
-const mockStats: AlertStats = {
+const mockStats = {
   total_alerts: 12,
   active_alerts: 8,
   triggered_alerts: 4,
   total_tickers: 6
 };
 
-const mockAlerts: Alert[] = [
+const mockAlerts = [
   {
     id: 1,
     ticker: "PETR4",
-    alertType: "price",
-    targetValue: 42.50,
+    alert_type: "price",
+    target_value: 42.50,
     condition: ">",
-    isActive: true,
+    is_active: true,
     triggered: false,
-    createdAt: new Date().toISOString(),
-    currentPrice: 41.80
+    created_at: new Date().toISOString(),
+    current_price: 41.80
   },
   {
     id: 2,
     ticker: "VALE3",
-    alertType: "percentage",
-    targetValue: -5,
+    alert_type: "percentage",
+    target_value: -5,
     condition: "<",
-    isActive: true,
+    is_active: true,
     triggered: false,
-    createdAt: new Date().toISOString(),
-    currentChange: -2.3
+    created_at: new Date().toISOString(),
+    current_change: -2.3
   },
   {
     id: 3,
     ticker: "BBDC4",
-    alertType: "volume",
-    targetValue: 1000000,
+    alert_type: "volume",
+    target_value: 1000000,
     condition: ">",
-    isActive: true,
+    is_active: true,
     triggered: false,
-    createdAt: new Date().toISOString(),
-    currentVolume: 850000
+    created_at: new Date().toISOString(),
+    current_volume: 850000
   }
 ];
 
-const mockHistory: AlertHistory[] = [
+const mockHistory = [
   {
     id: 4,
     ticker: "ITUB4",
-    alertType: "price",
-    targetValue: 28.50,
+    alert_type: "price",
+    target_value: 28.50,
     condition: ">",
-    isActive: false,
+    is_active: false,
     triggered: true,
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    triggeredAt: new Date(Date.now() - 86400000).toISOString()
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    triggered_at: new Date(Date.now() - 86400000).toISOString()
   },
   {
     id: 5,
     ticker: "MGLU3",
-    alertType: "percentage",
-    targetValue: 8,
+    alert_type: "percentage",
+    target_value: 8,
     condition: ">",
-    isActive: false,
+    is_active: false,
     triggered: true,
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    triggeredAt: new Date(Date.now() - 86400000 * 3).toISOString()
+    created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+    triggered_at: new Date(Date.now() - 86400000 * 3).toISOString()
   }
 ];
 
@@ -79,10 +77,10 @@ const GatilhoDashboard = () => {
   const [stats, setStats] = useState(mockStats);
   const [showNewAlertModal, setShowNewAlertModal] = useState(false);
 
-  const getAlertTypeConfig = (type: AlertType): AlertTypeConfig => {
-    const configs: Record<AlertType, AlertTypeConfig> = {
+  const getAlertTypeConfig = (type) => {
+    const configs = {
       price: {
-        icon: DollarSign, // Alterado para DollarSign para ser mais específico
+        icon: TrendingUp,
         label: 'Preço',
         color: 'text-emerald-600',
         bgColor: 'bg-emerald-50',
@@ -90,7 +88,7 @@ const GatilhoDashboard = () => {
         emoji: '💰'
       },
       percentage: {
-        icon: Percent, // Alterado para Percent para ser mais específico
+        icon: BarChart3,
         label: 'Variação',
         color: 'text-amber-600',
         bgColor: 'bg-amber-50',
@@ -106,20 +104,20 @@ const GatilhoDashboard = () => {
         emoji: '📈'
       }
     };
-    return configs[type];
+    return configs[type] || configs.price;
   };
 
-  const formatValue = (alert: Alert | AlertHistory): string => {
-    if (alert.alertType === 'price') {
-      return `R$ ${alert.targetValue.toFixed(2)}`;
-    } else if (alert.alertType === 'percentage') {
-      return `${alert.targetValue > 0 ? '+' : ''}${alert.targetValue}%`;
+  const formatValue = (alert) => {
+    if (alert.alert_type === 'price') {
+      return `R$ ${alert.target_value.toFixed(2)}`;
+    } else if (alert.alert_type === 'percentage') {
+      return `${alert.target_value > 0 ? '+' : ''}${alert.target_value}%`;
     } else {
-      return alert.targetValue.toLocaleString('pt-BR');
+      return alert.target_value.toLocaleString('pt-BR');
     }
   };
 
-  const formatDate = (dateString: string): string => {
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
@@ -130,8 +128,8 @@ const GatilhoDashboard = () => {
     }).format(date);
   };
 
-  const AlertCard = ({ alert, isHistory = false }: { alert: Alert | AlertHistory, isHistory?: boolean }) => {
-    const config = getAlertTypeConfig(alert.alertType);
+  const AlertCard = ({ alert, isHistory = false }) => {
+    const config = getAlertTypeConfig(alert.alert_type);
     const Icon = config.icon;
 
     return (
@@ -177,20 +175,20 @@ const GatilhoDashboard = () => {
             </span>
           </div>
 
-          {'currentPrice' in alert && alert.currentPrice !== undefined && (
+          {alert.current_price && (
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-medium text-gray-600">Atual:</span>
               <span className="text-lg font-semibold text-gray-700">
-                R$ {alert.currentPrice.toFixed(2)}
+                R$ {alert.current_price.toFixed(2)}
               </span>
             </div>
           )}
 
-          {'currentChange' in alert && alert.currentChange !== undefined && (
+          {alert.current_change !== undefined && (
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-medium text-gray-600">Variação:</span>
-              <span className={`text-lg font-semibold ${alert.currentChange >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                {alert.currentChange > 0 ? '+' : ''}{alert.currentChange}%
+              <span className={`text-lg font-semibold ${alert.current_change >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {alert.current_change > 0 ? '+' : ''}{alert.current_change}%
               </span>
             </div>
           )}
@@ -198,11 +196,11 @@ const GatilhoDashboard = () => {
           <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {formatDate(alert.createdAt)}
+              {formatDate(alert.created_at)}
             </span>
-            {'triggeredAt' in alert && alert.triggeredAt && (
+            {alert.triggered_at && (
               <span className="text-indigo-600 font-medium">
-                Disparado: {formatDate(alert.triggeredAt)}
+                Disparado: {formatDate(alert.triggered_at)}
               </span>
             )}
           </div>

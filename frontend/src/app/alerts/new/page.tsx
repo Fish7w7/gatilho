@@ -1,6 +1,8 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, TrendingUp, BarChart3, Volume2, AlertCircle, CheckCircle, DollarSign, Percent, Target } from 'lucide-react';
+import { alertsAPI, CreateAlertPayload } from '../../../services/api';
 
 interface FormData {
   ticker: string;
@@ -46,6 +48,7 @@ interface ColorClasses {
 }
 
 const NewAlertForm = () => {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     ticker: '',
@@ -57,6 +60,20 @@ const NewAlertForm = () => {
   const [errors, setErrors] = useState<Errors>({});
   const [searchTicker, setSearchTicker] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const storedUserId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
+
+    if (!storedUserId || !token) {
+      router.push('/login');
+      return;
+    }
+
+    setUserId(parseInt(storedUserId));
+  }, [router]);
 
   const popularStocks: Stock[] = [
     { ticker: 'PETR4', name: 'Petrobras', sector: 'Petróleo' },
@@ -108,7 +125,7 @@ const NewAlertForm = () => {
     stock.name.toLowerCase().includes(searchTicker.toLowerCase())
   );
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const newErrors: Errors = {};
     if (!formData.ticker) newErrors.ticker = 'Selecione uma ação';
     if (!formData.alertType) newErrors.alertType = 'Selecione o tipo de alerta';
@@ -120,12 +137,34 @@ const NewAlertForm = () => {
       return;
     }
 
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      setFormData({ ticker: '', alertType: '', condition: '', targetValue: '' });
-      setStep(1);
-    }, 2000);
+    if (!userId) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const payload: CreateAlertPayload = {
+        user_id: userId,
+        ticker: formData.ticker,
+        alert_type: formData.alertType,
+        target_value: parseFloat(formData.targetValue),
+        condition: formData.condition,
+      };
+
+      await alertsAPI.create(payload);
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+    } catch (error: any) {
+      console.error('Erro ao criar alerta:', error);
+      alert(error.response?.data?.detail || 'Erro ao criar alerta. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getColorClasses = (color: 'emerald' | 'amber' | 'purple'): ColorClasses => {
@@ -163,11 +202,11 @@ const NewAlertForm = () => {
         {/* Header */}
         <div className="mb-8">
           <button 
-            onClick={() => setStep(1)}
+            onClick={() => router.push('/dashboard')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Voltar</span>
+            <span className="font-medium">Voltar ao Dashboard</span>
           </button>
           
           <div className="flex items-center gap-4 mb-2">
@@ -468,10 +507,10 @@ const NewAlertForm = () => {
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={!formData.targetValue}
+                  disabled={!formData.targetValue || loading}
                   className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
                 >
-                  Criar Alerta
+                  {loading ? 'Criando...' : 'Criar Alerta'}
                 </button>
               </div>
             </div>

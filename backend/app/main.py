@@ -24,7 +24,6 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS CONFIGURADO CORRETAMENTE
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -33,8 +32,8 @@ app.add_middleware(
         "http://localhost:3001",
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # GET, POST, PUT, DELETE, OPTIONS, etc
+    allow_headers=["*"],  # Authorization, Content-Type, etc
     expose_headers=["*"],
 )
 
@@ -42,7 +41,6 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["Autenticação"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alertas"])
 
-# Importa e inclui rotas de monitoramento
 try:
     from .api import monitoring
     app.include_router(monitoring.router, prefix="/api/monitoring", tags=["Monitoramento"])
@@ -59,23 +57,14 @@ def root():
         "description": "Alertas inteligentes para ações da B3",
         "endpoints": {
             "docs": "/docs",
-            "health": "/api/monitoring/health",
+            "health": "/health",
             "status": "/api/monitoring/status"
         }
     }
 
 @app.get("/health")
 def health_check():
-    """Health check simplificado"""
     return {"status": "healthy"}
-
-# Middleware para debug (remover em produção)
-@app.middleware("http")
-async def log_requests(request, call_next):
-    logger.debug(f"🔵 {request.method} {request.url}")
-    response = await call_next(request)
-    logger.debug(f"✅ Status: {response.status_code}")
-    return response
 
 # WebSocket para notificações em tempo real
 @app.websocket("/ws/{user_id}")

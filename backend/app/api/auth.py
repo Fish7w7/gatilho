@@ -19,8 +19,7 @@ class UserCreate(BaseModel):
     def validate_password(cls, v):
         if len(v) < 6:
             raise ValueError('Senha deve ter pelo menos 6 caracteres')
-        if len(v) > 72:
-            raise ValueError('Senha deve ter no máximo 72 caracteres')
+        # Remove limite máximo - será tratado no hash
         return v
     
     @field_validator('name')
@@ -52,7 +51,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
         )
     
     try:
-        # Hash da senha
+        # Hash da senha (trunca automaticamente se necessário)
         hashed_pw = get_password_hash(user.password)
         
         # Cria o usuário
@@ -75,6 +74,8 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"❌ Erro ao criar usuário: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erro ao criar conta. Tente novamente."
@@ -84,23 +85,48 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 def login(credentials: UserLogin, db: Session = Depends(get_db)):
     """Faz login e retorna token JWT"""
     
-    user = db.query(User).filter(User.email == credentials.email).first()
-    
-    if not user or not verify_password(credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou senha incorretos"
+    try:
+        # Busca usuário
+        user = db.query(User).filter(User.email == credentials.email).first()
+        
+        # Verifica se usuário existe
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email ou senha incorretos"
+            )
+        
+        # Verifica senha
+        if not verify_password(credentials.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email ou senha incorretos"
+            )
+        
+        # Cria token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(user.id), "email": user.email},
+            expires_delta=access_token_expires
         )
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_id": user.id
+        }
     
-    # Cria token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email},
-        expires_delta=access_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user_id": user.id
-    }
+    except HTTPException:
+        # Re-raise HTTPException (erro de autenticação)
+        raise
+    except Exception as e:
+        # Log do erro real
+        print(f"❌ Erro inesperado no login: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Retorna erro genérico para o usuário
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao processar login. Tente novamente."
+        )

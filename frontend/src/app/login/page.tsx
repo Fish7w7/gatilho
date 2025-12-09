@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Eye, EyeOff, Zap } from 'lucide-react';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,38 +38,43 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Efeitos de fundo */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+      
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-xl">
-            <span className="text-3xl">🎯</span>
+          <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-2xl shadow-indigo-500/50 hover:scale-110 transition-transform">
+            <Zap className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Gatilho</h1>
-          <p className="text-indigo-100">Entre na sua conta</p>
+          <h1 className="text-5xl font-black text-white mb-2 tracking-tight">Gatilho</h1>
+          <p className="text-slate-400">Entre na sua conta</p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl p-8">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-red-700 text-sm">{error}</p>
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-red-400 text-sm font-semibold">{error}</p>
             </div>
           )}
 
-          <div className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-slate-300 mb-2">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-4 top-4 w-5 h-5 text-slate-500" />
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
                   placeholder="seu@email.com"
                   required
                 />
@@ -77,23 +82,23 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-slate-300 mb-2">
                 Senha
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-4 top-4 w-5 h-5 text-slate-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-12 pr-12 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                  className="w-full pl-12 pr-12 py-4 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-4 text-slate-500 hover:text-slate-300 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -101,9 +106,9 @@ export default function LoginPage() {
             </div>
 
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold hover:shadow-2xl hover:shadow-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -114,21 +119,34 @@ export default function LoginPage() {
                 'Entrar'
               )}
             </button>
-          </div>
+          </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
+            <p className="text-slate-400 text-sm">
               Não tem conta?{' '}
-              <Link href="/signup" className="text-indigo-600 hover:text-indigo-700 font-semibold">
-                Cadastre-se gratuitamente
+              <Link href="/signup" className="text-indigo-400 hover:text-indigo-300 font-bold transition-colors">
+                Cadastre-se grátis
               </Link>
             </p>
           </div>
         </div>
 
         {/* Trust Signals */}
-        <div className="mt-8 text-center space-y-2">
-          <p className="text-white/80 text-sm">✅ Gratuito • 🔒 100% Seguro • 📧 Sem spam</p>
+        <div className="mt-8 text-center space-y-3">
+          <div className="flex items-center justify-center gap-6 text-sm">
+            <span className="flex items-center gap-2 text-slate-400">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              100% Gratuito
+            </span>
+            <span className="flex items-center gap-2 text-slate-400">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+              Seguro
+            </span>
+            <span className="flex items-center gap-2 text-slate-400">
+              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+              Sem spam
+            </span>
+          </div>
         </div>
       </div>
     </div>

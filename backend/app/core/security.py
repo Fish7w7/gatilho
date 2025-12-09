@@ -6,24 +6,42 @@ from .config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+def truncate_password(password: str, max_bytes: int = 72) -> str:
+    password_bytes = password.encode('utf-8')
+    
+    if len(password_bytes) <= max_bytes:
+        return password
+    truncated_bytes = password_bytes[:max_bytes]
+    
+    try:
+        return truncated_bytes.decode('utf-8')
+    except UnicodeDecodeError:
+        for i in range(max_bytes, max_bytes - 4, -1):
+            try:
+                return password_bytes[:i].decode('utf-8')
+            except UnicodeDecodeError:
+                continue
+        return ""
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifica se a senha está correta"""
-    return pwd_context.verify(plain_password, hashed_password)
+    truncated = truncate_password(plain_password, max_bytes=72)
+    
+    try:
+        return pwd_context.verify(truncated, hashed_password)
+    except Exception as e:
+        print(f"❌ Erro ao verificar senha: {e}")
+        return False
 
 def get_password_hash(password: str) -> str:
-    """
-    Hash da senha com validação de tamanho.
-    Bcrypt tem limite de 72 bytes.
-    """
-    # Trunca senhas muito longas para 72 caracteres
-    # (muito improvável que alguém digite senha tão longa, mas vamos prevenir)
-    if len(password) > 72:
-        password = password[:72]
+    truncated = truncate_password(password, max_bytes=72)
     
-    return pwd_context.hash(password)
+    try:
+        return pwd_context.hash(truncated)
+    except Exception as e:
+        print(f"❌ Erro ao criar hash da senha: {e}")
+        raise
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Cria token JWT"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -34,7 +52,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 def verify_token(token: str):
-    """Verifica se o token é válido"""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload

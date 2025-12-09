@@ -1,49 +1,80 @@
-# docker-compose.prod.yml
 version: '3.8'
 
 services:
-  backend:
-    build: ./backend
-    environment:
-      - DATABASE_URL=postgresql://user:pass@postgres:5432/gatilho
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - postgres
-      - redis
-    ports:
-      - "8000:8000"
-
-  celery_worker:
-    build: ./backend
-    command: celery -A app.tasks.celery_app worker --loglevel=info
-    depends_on:
-      - postgres
-      - redis
-
-  celery_beat:
-    build: ./backend
-    command: celery -A app.tasks.celery_app beat --loglevel=info
-    depends_on:
-      - postgres
-      - redis
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
-
+  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
+    container_name: gatilho_postgres
+    environment:
+      POSTGRES_USER: gatilho
+      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_DB: gatilho_db
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gatilho"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gatilho_network
 
+  # Redis Cache/Queue
   redis:
     image: redis:7-alpine
+    container_name: gatilho_redis
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gatilho_network
+
+  # Redis Commander (GUI para Redis - opcional)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: gatilho_redis_commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - gatilho_network
+    profiles:
+      - debug
+
+  # PgAdmin (GUI para PostgreSQL - opcional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: gatilho_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gatilho.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - gatilho_network
+    profiles:
+      - debug
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+
+networks:
+  gatilho_network:
+    driver: bridge

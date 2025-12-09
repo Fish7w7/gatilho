@@ -2,6 +2,9 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
 from ..core.config import settings
 import logging
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 logger = logging.getLogger(__name__)
 

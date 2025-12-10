@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .core.database import engine, Base
 from .api import auth, alerts
 from .websocket import manager
+from .scheduler import start_scheduler, shutdown_scheduler
 import logging
 
 # Configurar logging
@@ -65,6 +66,7 @@ def root():
         "message": "Gatilho API v1.0.0",
         "status": "online",
         "description": "Alertas inteligentes para ações da B3",
+        "scheduler": "APScheduler (sem Celery/Redis)",
         "endpoints": {
             "docs": "/docs",
             "health": "/api/monitoring/health",
@@ -102,6 +104,19 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
         manager.disconnect(websocket, user_id)
         logger.info(f"🔌 WebSocket desconectado: user_id={user_id}")
 
+
+# Adicione ANTES de @app.on_event("startup")
+@app.get("/debug/env")
+def debug_env():
+    """Endpoint temporário para verificar variáveis de ambiente"""
+    from .core.config import settings
+    return {
+        "sendgrid_key_exists": bool(settings.SENDGRID_API_KEY),
+        "sendgrid_key_length": len(settings.SENDGRID_API_KEY) if settings.SENDGRID_API_KEY else 0,
+        "sendgrid_key_preview": settings.SENDGRID_API_KEY[:10] + "..." if settings.SENDGRID_API_KEY else "VAZIO",
+        "email_from": settings.EMAIL_FROM
+    }
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():
@@ -110,8 +125,13 @@ async def startup_event():
     logger.info("   - Docs: http://localhost:8000/docs")
     logger.info("   - Health: http://localhost:8000/health")
     logger.info("   - Status: http://localhost:8000/api/monitoring/status")
+    
+    # Inicia o scheduler
+    start_scheduler()
+    logger.info("⏰ Scheduler APScheduler ativo (verifica alertas a cada 5 min)")
 
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
+    shutdown_scheduler()
     logger.info("👋 Gatilho API encerrada")

@@ -20,9 +20,8 @@ python-jose[cryptography]==3.3.0
 # Ambiente e configuração
 python-dotenv==1.0.0
 
-# Celery e Redis
-celery==5.3.4
-redis==5.0.1
+# Scheduler (substitui Celery + Redis)
+apscheduler==3.10.4
 
 # HTTP Client
 httpx==0.25.2

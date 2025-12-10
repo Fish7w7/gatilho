@@ -13,8 +13,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Cria as tabelas no banco
-Base.metadata.create_all(bind=engine)
-logger.info("✅ Tabelas do banco de dados criadas/verificadas")
+try:
+    Base.metadata.create_all(bind=engine)
+    logger.info("✅ Tabelas do banco de dados criadas/verificadas")
+except Exception as e:
+    logger.error(f"❌ Erro ao criar tabelas: {e}")
 
 app = FastAPI(
     title="Gatilho API",
@@ -24,23 +27,30 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# ==========================================
+# CORS - CONFIGURAÇÃO CRÍTICA
+# ==========================================
+# DEVE estar ANTES de todas as rotas
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:3001",
+        "http://127.0.0.1:3001",
     ],
     allow_credentials=True,
-    allow_methods=["*"],  # GET, POST, PUT, DELETE, OPTIONS, etc
-    allow_headers=["*"],  # Authorization, Content-Type, etc
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
     expose_headers=["*"],
+    max_age=3600,  # Cache preflight por 1 hora
 )
 
 # Rotas principais
 app.include_router(auth.router, prefix="/api/auth", tags=["Autenticação"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alertas"])
 
+# Importa e inclui rotas de monitoramento
 try:
     from .api import monitoring
     app.include_router(monitoring.router, prefix="/api/monitoring", tags=["Monitoramento"])
@@ -57,14 +67,27 @@ def root():
         "description": "Alertas inteligentes para ações da B3",
         "endpoints": {
             "docs": "/docs",
-            "health": "/health",
+            "health": "/api/monitoring/health",
             "status": "/api/monitoring/status"
         }
     }
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    """Health check simplificado"""
+    return {"status": "healthy", "service": "Gatilho API"}
+
+# Middleware para debug (COMENTAR EM PRODUÇÃO)
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logger.info(f"🔵 {request.method} {request.url}")
+    try:
+        response = await call_next(request)
+        logger.info(f"✅ Status: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"❌ Erro: {e}")
+        raise
 
 # WebSocket para notificações em tempo real
 @app.websocket("/ws/{user_id}")
@@ -72,13 +95,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
     await manager.connect(websocket, user_id)
     try:
         while True:
-            # Mantém conexão ativa e recebe mensagens do cliente
             data = await websocket.receive_text()
-            
-            # Pode implementar heartbeat aqui
             if data == "ping":
                 await websocket.send_text("pong")
-                
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
         logger.info(f"🔌 WebSocket desconectado: user_id={user_id}")

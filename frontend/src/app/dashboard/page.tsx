@@ -64,9 +64,43 @@ const ModernDashboard = () => {
   };
 
   const formatValue = (alert: Alert): string => {
-    if (alert.alert_type === 'price') return `R$ ${alert.target_value.toFixed(2)}`;
-    if (alert.alert_type === 'percentage') return `${alert.target_value > 0 ? '+' : ''}${alert.target_value}%`;
+    if (alert.alert_type === 'price') {
+      return `R$ ${alert.target_value.toFixed(2)}`;
+    }
+    if (alert.alert_type === 'percentage') {
+      return `${alert.target_value > 0 ? '+' : ''}${alert.target_value}%`;
+    }
+    if (alert.alert_type === 'volume') {
+      // Formata volume com separadores de milhar
+      const volume = alert.target_value;
+      if (volume >= 1000000) {
+        return `${(volume / 1000000).toFixed(1)}M de ações`;
+      }
+      if (volume >= 1000) {
+        return `${(volume / 1000).toFixed(0)}K de ações`;
+      }
+      return `${volume.toLocaleString('pt-BR')} ações`;
+    }
     return alert.target_value.toLocaleString('pt-BR');
+  };
+
+  const getConditionText = (condition: string): string => {
+    const conditionMap: Record<string, string> = {
+      '>': 'Subir acima de',
+      '<': 'Cair abaixo de',
+      '>=': 'Atingir ou superar',
+      '<=': 'Atingir ou cair para'
+    };
+    return conditionMap[condition] || condition;
+  };
+
+  const getAlertTypeText = (type: string): string => {
+    const typeMap: Record<string, string> = {
+      'price': 'Preço Alvo',
+      'percentage': 'Variação Diária',
+      'volume': 'Volume'
+    };
+    return typeMap[type] || type;
   };
 
   const StockCard = ({ alert, isHistory = false }: { alert: Alert; isHistory?: boolean }) => {
@@ -100,9 +134,7 @@ const ModernDashboard = () => {
               <div>
                 <h3 className="text-3xl font-black text-white tracking-tight">{alert.ticker}</h3>
                 <p className="text-slate-400 text-sm mt-0.5">
-                  {alert.alert_type === 'price' && ' Preço Alvo'}
-                  {alert.alert_type === 'percentage' && ' Variação'}
-                  {alert.alert_type === 'volume' && ' Volume'}
+                  {getAlertTypeText(alert.alert_type)}
                 </p>
               </div>
             </div>
@@ -131,10 +163,10 @@ const ModernDashboard = () => {
 
           {/* Valor Alvo */}
           <div className="mb-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-            <p className="text-xs font-semibold text-slate-400 mb-1">ALVO CONFIGURADO</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-slate-300">{alert.condition}</span>
-              <span className="text-3xl font-black text-white">{formatValue(alert)}</span>
+            <p className="text-xs font-semibold text-slate-400 mb-2">CONDIÇÃO CONFIGURADA</p>
+            <div className="space-y-1">
+              <p className="text-lg font-bold text-indigo-400">{getConditionText(alert.condition)}</p>
+              <p className="text-2xl font-black text-white">{formatValue(alert)}</p>
             </div>
           </div>
 
@@ -146,7 +178,7 @@ const ModernDashboard = () => {
             </span>
             {alert.triggered_at && (
               <span className="text-indigo-400 font-semibold">
-               {new Date(alert.triggered_at).toLocaleDateString('pt-BR')}
+                ⚡ {new Date(alert.triggered_at).toLocaleDateString('pt-BR')}
               </span>
             )}
           </div>

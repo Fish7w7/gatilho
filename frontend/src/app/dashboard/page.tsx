@@ -2,121 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bell, TrendingUp, TrendingDown, Plus, Trash2, Target, Zap, Clock, CheckCircle2, Activity, Sparkles, DollarSign, Percent, Volume2, Search, Star, User, ChevronDown, X, Settings, LogOut, Shield, Crown } from 'lucide-react';
+import { Bell, TrendingUp, TrendingDown, Plus, Trash2, Target, Zap, DollarSign, Percent, Volume2, Search, User } from 'lucide-react';
 import { alertsAPI, Alert, AlertStats } from '../../services/api';
+import NotificationPanel from '../../components/NotificationPanel';
+import ProfilePanel from '../../components/ProfilePanel';
 
-// Componente de Notificações
-const NotificationPanel = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [notifications] = useState([
-    { id: 1, ticker: 'VALE3', message: 'Atingiu R$ 65,50', time: '2 min', read: false },
-    { id: 2, ticker: 'PETR4', message: 'Variou +3.2%', time: '1h', read: false },
-    { id: 3, ticker: 'ITUB4', message: 'Volume acima da média', time: '3h', read: true }
-  ]);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  return (
-    <div className="relative">
-      <button onClick={() => setIsOpen(!isOpen)} className="relative p-2 hover:bg-slate-800/50 rounded-lg transition-all">
-        <Bell className="w-5 h-5 text-slate-400" />
-        {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white animate-pulse">
-            {unreadCount}
-          </span>
-        )}
-      </button>
-
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-12 w-96 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-white font-bold">Notificações</h3>
-              <button onClick={() => setIsOpen(false)}><X className="w-4 h-4 text-slate-400" /></button>
-            </div>
-            <div className="divide-y divide-slate-800 max-h-96 overflow-y-auto">
-              {notifications.map((n) => (
-                <div key={n.id} className={`p-4 hover:bg-slate-800/50 ${!n.read ? 'bg-indigo-500/5' : ''}`}>
-                  <div className="flex gap-3">
-                    <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-white">{n.ticker}</p>
-                      <p className="text-sm text-slate-300">{n.message}</p>
-                      <p className="text-xs text-slate-500 mt-1">{n.time} atrás</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-// Componente de Perfil
-const ProfilePanel = ({ onLogout }: { onLogout: () => void }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-800/50 rounded-xl transition-all">
-        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">
-          U
-        </div>
-        <div className="hidden md:block text-left">
-          <p className="text-sm font-bold text-white">Usuário</p>
-          <p className="text-xs text-slate-400">Plano Free</p>
-        </div>
-        <ChevronDown className={`w-4 h-4 text-slate-400 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-14 w-80 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50">
-            <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-b border-slate-800">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl">
-                  U
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-lg">Usuário</h3>
-                  <p className="text-slate-400 text-sm">user@email.com</p>
-                </div>
-              </div>
-              <button className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-2">
-                <Crown className="w-4 h-4" />Upgrade Premium
-              </button>
-            </div>
-            <div className="p-2">
-              <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 rounded-xl transition-all">
-                <Settings className="w-5 h-5 text-slate-400" />
-                <span className="text-white font-semibold text-sm">Configurações</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 rounded-xl transition-all">
-                <Shield className="w-5 h-5 text-slate-400" />
-                <span className="text-white font-semibold text-sm">Privacidade</span>
-              </button>
-              <div className="my-2 border-t border-slate-800"></div>
-              <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 rounded-xl transition-all group">
-                <LogOut className="w-5 h-5 text-slate-400 group-hover:text-red-400" />
-                <span className="text-white font-semibold text-sm group-hover:text-red-400">Sair</span>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-// Dashboard Principal
-export default function EnhancedDashboard() {
+export default function Dashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,11 +60,6 @@ export default function EnhancedDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/login');
-  };
-
   const formatValue = (alert: Alert): string => {
     if (alert.alert_type === 'price') return `R$ ${alert.target_value.toFixed(2)}`;
     if (alert.alert_type === 'percentage') return `${alert.target_value}%`;
@@ -187,9 +73,9 @@ export default function EnhancedDashboard() {
 
   const getTypeInfo = (type: string) => {
     const t: Record<string, any> = {
-      price: { label: 'Preço', icon: DollarSign },
-      percentage: { label: 'Variação', icon: Percent },
-      volume: { label: 'Volume', icon: Volume2 }
+      price: { label: 'Preço', icon: DollarSign, color: 'emerald' },
+      percentage: { label: 'Variação', icon: Percent, color: 'amber' },
+      volume: { label: 'Volume', icon: Volume2, color: 'purple' }
     };
     return t[type] || t.price;
   };
@@ -221,7 +107,7 @@ export default function EnhancedDashboard() {
             </div>
           </div>
           {!isHistory && (
-            <button onClick={() => handleDelete(alert.id)} className="p-2 hover:bg-red-500/10 rounded-lg">
+            <button onClick={() => handleDelete(alert.id)} className="p-2 hover:bg-red-500/10 rounded-lg transition-all">
               <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-400" />
             </button>
           )}
@@ -262,7 +148,7 @@ export default function EnhancedDashboard() {
             </div>
             <div className="flex items-center gap-4">
               <NotificationPanel />
-              <ProfilePanel onLogout={handleLogout} />
+              <ProfilePanel />
             </div>
           </div>
         </div>
@@ -290,9 +176,9 @@ export default function EnhancedDashboard() {
 
         {showQuickActions && (
           <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-6 mb-8 relative">
-            <button onClick={() => setShowQuickActions(false)} className="absolute top-4 right-4 text-slate-500">✕</button>
+            <button onClick={() => setShowQuickActions(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">✕</button>
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-indigo-400" />Ações Rápidas
+              <Zap className="w-6 h-6 text-indigo-400" />Ações Rápidas
             </h3>
             <div className="grid md:grid-cols-3 gap-4">
               {[
@@ -300,7 +186,7 @@ export default function EnhancedDashboard() {
                 { icon: Percent, title: 'Variação', color: 'amber' },
                 { icon: Volume2, title: 'Volume', color: 'purple' }
               ].map((a, i) => (
-                <Link key={i} href="/alerts/new" className="flex items-center gap-3 p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-xl">
+                <Link key={i} href="/alerts/new" className="flex items-center gap-3 p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-xl transition-all">
                   <div className={`w-10 h-10 bg-${a.color}-500/20 rounded-lg flex items-center justify-center`}>
                     <a.icon className={`w-5 h-5 text-${a.color}-400`} />
                   </div>
@@ -331,10 +217,10 @@ export default function EnhancedDashboard() {
               placeholder="Buscar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white outline-none focus:border-indigo-500"
+              className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white outline-none focus:border-indigo-500 transition-all"
             />
           </div>
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white outline-none">
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white outline-none focus:border-indigo-500 transition-all">
             <option value="all">Todos</option>
             <option value="price">Preço</option>
             <option value="percentage">Variação</option>
@@ -348,7 +234,7 @@ export default function EnhancedDashboard() {
               key={tab}
               onClick={() => setActiveTab(tab as any)}
               className={`px-6 py-3 rounded-xl font-bold transition-all ${
-                activeTab === tab ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-slate-800/50 text-slate-400'
+                activeTab === tab ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800'
               }`}
             >
               {tab === 'active' ? 'Ativos' : 'Histórico'} ({filtered.length})
@@ -362,7 +248,7 @@ export default function EnhancedDashboard() {
               <Bell className="w-16 h-16 text-slate-600 mx-auto mb-4" />
               <h3 className="text-2xl font-bold mb-2">Nenhum alerta</h3>
               <Link href="/alerts/new">
-                <button className="mt-4 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-bold">
+                <button className="mt-4 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-bold hover:scale-105 transition-all">
                   Criar Alerta
                 </button>
               </Link>

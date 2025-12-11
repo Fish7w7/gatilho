@@ -8,7 +8,7 @@ export default function HomePage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/50">
                 <Zap className="w-6 h-6 text-white" />
               </div>
@@ -17,7 +17,7 @@ export default function HomePage() {
                   Gatilho
                 </h1>
               </div>
-            </div>
+            </Link>
             
             <div className="flex items-center gap-3">
               <Link href="/login">
@@ -68,9 +68,9 @@ export default function HomePage() {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </Link>
-              <Link href="/login">
+              <Link href="/sobre">
                 <button className="px-8 py-4 bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl font-bold text-lg hover:bg-slate-800 transition-all">
-                  Ver Demo
+                  Saiba Mais
                 </button>
               </Link>
             </div>
@@ -237,10 +237,10 @@ export default function HomePage() {
             </div>
             
             <div className="flex gap-6 text-sm text-slate-400">
-              <a href="#" className="hover:text-white transition-colors">Sobre</a>
-              <a href="#" className="hover:text-white transition-colors">Termos</a>
-              <a href="#" className="hover:text-white transition-colors">Privacidade</a>
-              <a href="#" className="hover:text-white transition-colors">Contato</a>
+              <Link href="/sobre" className="hover:text-white transition-colors">Sobre</Link>
+              <Link href="/termos" className="hover:text-white transition-colors">Termos</Link>
+              <Link href="/privacidade" className="hover:text-white transition-colors">Privacidade</Link>
+              <Link href="/contato" className="hover:text-white transition-colors">Contato</Link>
             </div>
             
             <p className="text-sm text-slate-500">

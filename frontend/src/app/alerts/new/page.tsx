@@ -10,7 +10,7 @@ interface Stock {
   sector: string;
 }
 
-const ImprovedAlertForm = () => {
+export default function ImprovedAlertForm() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -502,6 +502,4 @@ const ImprovedAlertForm = () => {
       </div>
     </div>
   );
-};
-
-export default ImprovedAlertForm;
+}

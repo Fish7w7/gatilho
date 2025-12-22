@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom'; 
 import { 
-  User, Settings, LogOut, Mail, Calendar, Crown, ChevronDown, X, 
-  Bell, Shield, Palette, Key, CreditCard, HelpCircle, FileText,
-  Save, Camera, Trash2, Eye, EyeOff, Check, AlertCircle
+  User, Settings, LogOut, Mail, Crown, ChevronDown, X, 
+  Bell, Shield, Key, Trash2, Eye, EyeOff, Check, AlertCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -16,8 +15,7 @@ interface UserProfile {
   avatar?: string;
 }
 
-type SettingsTab = 'profile' | 'account' | 'notifications' | 'appearance' | 'security';
-type ThemeColor = 'indigo' | 'purple' | 'blue' | 'emerald' | 'amber' | 'rose';
+type SettingsTab = 'profile' | 'account' | 'notifications' | 'security';
 
 export default function ProfilePanel() {
   const router = useRouter();
@@ -57,20 +55,13 @@ export default function ProfilePanel() {
     priceAlerts: true
   });
 
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [accentColor, setAccentColor] = useState<ThemeColor>('indigo');
-
   // Carrega dados do perfil do localStorage
   useEffect(() => {
     const storedName = localStorage.getItem('userName');
     const storedEmail = localStorage.getItem('userEmail');
-    const storedTheme = localStorage.getItem('theme') as 'dark' | 'light';
-    const storedColor = localStorage.getItem('accentColor') as ThemeColor;
 
     if (storedName) setProfile(prev => ({ ...prev, name: storedName }));
     if (storedEmail) setProfile(prev => ({ ...prev, email: storedEmail }));
-    if (storedTheme) setTheme(storedTheme);
-    if (storedColor) setAccentColor(storedColor);
 
     setFormData(prev => ({
       ...prev,
@@ -78,22 +69,6 @@ export default function ProfilePanel() {
       email: storedEmail || prev.email
     }));
   }, []);
-
-  // Aplica o tema
-  useEffect(() => {
-    if (theme === 'light') {
-      document.documentElement.classList.add('light-theme');
-    } else {
-      document.documentElement.classList.remove('light-theme');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  // Aplica a cor de destaque
-  useEffect(() => {
-    document.documentElement.setAttribute('data-accent-color', accentColor);
-    localStorage.setItem('accentColor', accentColor);
-  }, [accentColor]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -107,7 +82,6 @@ export default function ProfilePanel() {
     try {
       setSaveError('');
       
-      // Validação
       if (!formData.name.trim() || formData.name.length < 2) {
         setSaveError('Nome deve ter pelo menos 2 caracteres');
         return;
@@ -118,7 +92,6 @@ export default function ProfilePanel() {
         return;
       }
 
-      // Salva no localStorage (em produção, seria uma chamada à API)
       localStorage.setItem('userName', formData.name);
       localStorage.setItem('userEmail', formData.email);
       
@@ -136,7 +109,6 @@ export default function ProfilePanel() {
     try {
       setSaveError('');
 
-      // Validações
       if (!formData.currentPassword) {
         setSaveError('Digite a senha atual');
         return;
@@ -160,7 +132,6 @@ export default function ProfilePanel() {
         return;
       }
 
-      // Chama API para alterar senha
       const response = await fetch(`http://localhost:8000/api/user/change-password?user_id=${userId}`, {
         method: 'POST',
         headers: {
@@ -178,7 +149,6 @@ export default function ProfilePanel() {
         throw new Error(error.detail || 'Erro ao alterar senha');
       }
 
-      // Limpa os campos
       setFormData({
         ...formData,
         currentPassword: '',
@@ -212,7 +182,6 @@ export default function ProfilePanel() {
         return;
       }
 
-      // Chama API para deletar conta
       const response = await fetch(`http://localhost:8000/api/user/me?user_id=${userId}`, {
         method: 'DELETE',
         headers: {
@@ -236,17 +205,7 @@ export default function ProfilePanel() {
     { id: 'profile', label: 'Perfil', icon: User },
     { id: 'account', label: 'Conta', icon: Mail },
     { id: 'notifications', label: 'Notificações', icon: Bell },
-    { id: 'appearance', label: 'Aparência', icon: Palette },
     { id: 'security', label: 'Segurança', icon: Shield }
-  ];
-
-  const colorOptions: { value: ThemeColor; name: string; class: string }[] = [
-    { value: 'indigo', name: 'Índigo', class: 'bg-indigo-500' },
-    { value: 'purple', name: 'Roxo', class: 'bg-purple-500' },
-    { value: 'blue', name: 'Azul', class: 'bg-blue-500' },
-    { value: 'emerald', name: 'Verde', class: 'bg-emerald-500' },
-    { value: 'amber', name: 'Âmbar', class: 'bg-amber-500' },
-    { value: 'rose', name: 'Rosa', class: 'bg-rose-500' }
   ];
 
   const SettingsModal = () => (
@@ -452,64 +411,6 @@ export default function ProfilePanel() {
                 >
                   Salvar Preferências
                 </button>
-              </div>
-            )}
-
-            {/* Appearance Tab */}
-            {activeTab === 'appearance' && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-black text-white mb-1">Tema e Aparência</h3>
-                  <p className="text-slate-400 text-sm">Personalize a aparência do aplicativo</p>
-                </div>
-
-                <div>
-                  <h4 className="text-lg font-bold text-white mb-4">Tema</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { value: 'dark', label: 'Escuro', icon: '🌙', desc: 'Interface escura (atual)' },
-                      { value: 'light', label: 'Claro', icon: '☀️', desc: 'Interface clara (em breve)' }
-                    ].map((t) => (
-                      <button 
-                        key={t.value}
-                        onClick={() => setTheme(t.value as 'dark' | 'light')}
-                        disabled={t.value === 'light'}
-                        className={`p-6 rounded-2xl border-2 transition-all ${
-                          theme === t.value 
-                            ? 'border-indigo-500 bg-indigo-500/10' 
-                            : 'border-slate-700 hover:border-slate-600 bg-slate-800/30'
-                        } ${t.value === 'light' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <div className="text-4xl mb-3">{t.icon}</div>
-                        <p className="text-sm font-bold text-white">{t.label}</p>
-                        <p className="text-xs text-slate-400 mt-1">{t.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-lg font-bold text-white mb-4">Cor de Destaque</h4>
-                  <div className="grid grid-cols-6 gap-3">
-                    {colorOptions.map((color) => (
-                      <button 
-                        key={color.value}
-                        onClick={() => setAccentColor(color.value)}
-                        className={`relative w-full aspect-square rounded-xl ${color.class} hover:scale-110 transition-all ${
-                          accentColor === color.value ? 'ring-4 ring-white ring-offset-4 ring-offset-slate-900' : ''
-                        }`}
-                        title={color.name}
-                      >
-                        {accentColor === color.value && (
-                          <Check className="absolute inset-0 m-auto w-6 h-6 text-white" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-sm text-slate-400 mt-3">
-                    Cor selecionada: <span className="font-bold text-white">{colorOptions.find(c => c.value === accentColor)?.name}</span>
-                  </p>
-                </div>
               </div>
             )}
 

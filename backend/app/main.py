@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from .core.database import engine, Base
-from .api import auth, alerts
+from .api import auth, alerts, user
 from .websocket import manager
 from .scheduler import start_scheduler, shutdown_scheduler
 import logging
@@ -28,10 +28,7 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# ==========================================
-# CORS - CONFIGURAÇÃO CRÍTICA
-# ==========================================
-# DEVE estar ANTES de todas as rotas
+# CORS - CONFIGURAÇÃO CRÍTICA (DEVE estar ANTES de todas as rotas)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -44,12 +41,13 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
-    max_age=3600,  # Cache preflight por 1 hora
+    max_age=3600,
 )
 
 # Rotas principais
 app.include_router(auth.router, prefix="/api/auth", tags=["Autenticação"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alertas"])
+app.include_router(user.router, prefix="/api/user", tags=["Usuário"])
 
 # Importa e inclui rotas de monitoramento
 try:
@@ -79,7 +77,7 @@ def health_check():
     """Health check simplificado"""
     return {"status": "healthy", "service": "Gatilho API"}
 
-# Middleware para debug (COMENTAR EM PRODUÇÃO)
+# Middleware para debug
 @app.middleware("http")
 async def log_requests(request, call_next):
     logger.info(f"🔵 {request.method} {request.url}")
@@ -103,19 +101,6 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
         logger.info(f"🔌 WebSocket desconectado: user_id={user_id}")
-
-
-# Adicione ANTES de @app.on_event("startup")
-@app.get("/debug/env")
-def debug_env():
-    """Endpoint temporário para verificar variáveis de ambiente"""
-    from .core.config import settings
-    return {
-        "sendgrid_key_exists": bool(settings.SENDGRID_API_KEY),
-        "sendgrid_key_length": len(settings.SENDGRID_API_KEY) if settings.SENDGRID_API_KEY else 0,
-        "sendgrid_key_preview": settings.SENDGRID_API_KEY[:10] + "..." if settings.SENDGRID_API_KEY else "VAZIO",
-        "email_from": settings.EMAIL_FROM
-    }
 
 # Startup event
 @app.on_event("startup")

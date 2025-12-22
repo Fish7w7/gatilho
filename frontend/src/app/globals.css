@@ -21,3 +21,141 @@
     @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all;
   }
 }
+
+/* Temas de cor - Aplicados dinamicamente ao body */
+body.theme-indigo .bg-theme-primary { background-color: #6366f1 !important; }
+body.theme-indigo .text-theme-primary { color: #6366f1 !important; }
+body.theme-indigo .border-theme-primary { border-color: #6366f1 !important; }
+body.theme-indigo .hover\:bg-theme-primary:hover { background-color: #4f46e5 !important; }
+body.theme-indigo .focus\:border-theme-primary:focus { border-color: #6366f1 !important; }
+body.theme-indigo .focus\:ring-theme-primary:focus { 
+  --tw-ring-color: rgba(99, 102, 241, 0.2) !important; 
+}
+
+body.theme-purple .bg-theme-primary { background-color: #a855f7 !important; }
+body.theme-purple .text-theme-primary { color: #a855f7 !important; }
+body.theme-purple .border-theme-primary { border-color: #a855f7 !important; }
+body.theme-purple .hover\:bg-theme-primary:hover { background-color: #9333ea !important; }
+body.theme-purple .focus\:border-theme-primary:focus { border-color: #a855f7 !important; }
+body.theme-purple .focus\:ring-theme-primary:focus { 
+  --tw-ring-color: rgba(168, 85, 247, 0.2) !important; 
+}
+
+body.theme-blue .bg-theme-primary { background-color: #3b82f6 !important; }
+body.theme-blue .text-theme-primary { color: #3b82f6 !important; }
+body.theme-blue .border-theme-primary { border-color: #3b82f6 !important; }
+body.theme-blue .hover\:bg-theme-primary:hover { background-color: #2563eb !important; }
+body.theme-blue .focus\:border-theme-primary:focus { border-color: #3b82f6 !important; }
+body.theme-blue .focus\:ring-theme-primary:focus { 
+  --tw-ring-color: rgba(59, 130, 246, 0.2) !important; 
+}
+
+body.theme-emerald .bg-theme-primary { background-color: #10b981 !important; }
+body.theme-emerald .text-theme-primary { color: #10b981 !important; }
+body.theme-emerald .border-theme-primary { border-color: #10b981 !important; }
+body.theme-emerald .hover\:bg-theme-primary:hover { background-color: #059669 !important; }
+body.theme-emerald .focus\:border-theme-primary:focus { border-color: #10b981 !important; }
+body.theme-emerald .focus\:ring-theme-primary:focus { 
+  --tw-ring-color: rgba(16, 185, 129, 0.2) !important; 
+}
+
+body.theme-amber .bg-theme-primary { background-color: #f59e0b !important; }
+body.theme-amber .text-theme-primary { color: #f59e0b !important; }
+body.theme-amber .border-theme-primary { border-color: #f59e0b !important; }
+body.theme-amber .hover\:bg-theme-primary:hover { background-color: #d97706 !important; }
+body.theme-amber .focus\:border-theme-primary:focus { border-color: #f59e0b !important; }
+body.theme-amber .focus\:ring-theme-primary:focus { 
+  --tw-ring-color: rgba(245, 158, 11, 0.2) !important; 
+}
+
+body.theme-rose .bg-theme-primary { background-color: #f43f5e !important; }
+body.theme-rose .text-theme-primary { color: #f43f5e !important; }
+body.theme-rose .border-theme-primary { border-color: #f43f5e !important; }
+body.theme-rose .hover\:bg-theme-primary:hover { background-color: #e11d48 !important; }
+body.theme-rose .focus\:border-theme-primary:focus { border-color: #f43f5e !important; }
+body.theme-rose .focus\:ring-theme-primary:focus { 
+  --tw-ring-color: rgba(244, 63, 94, 0.2) !important; 
+}
+
+/* Aplicar cores nos gradientes também */
+body.theme-indigo .from-indigo-500 { --tw-gradient-from: #6366f1 !important; }
+body.theme-indigo .to-purple-600 { --tw-gradient-to: #9333ea !important; }
+
+body.theme-purple .from-indigo-500 { --tw-gradient-from: #a855f7 !important; }
+body.theme-purple .to-purple-600 { --tw-gradient-to: #7e22ce !important; }
+
+body.theme-blue .from-indigo-500 { --tw-gradient-from: #3b82f6 !important; }
+body.theme-blue .to-purple-600 { --tw-gradient-to: #1d4ed8 !important; }
+
+body.theme-emerald .from-indigo-500 { --tw-gradient-from: #10b981 !important; }
+body.theme-emerald .to-purple-600 { --tw-gradient-to: #047857 !important; }
+
+body.theme-amber .from-indigo-500 { --tw-gradient-from: #f59e0b !important; }
+body.theme-amber .to-purple-600 { --tw-gradient-to: #b45309 !important; }
+
+body.theme-rose .from-indigo-500 { --tw-gradient-from: #f43f5e !important; }
+body.theme-rose .to-purple-600 { --tw-gradient-to: #be123c !important; }
+
+/* Scrollbar personalizada */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Animações */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-from-top-2 {
+  from {
+    transform: translateY(-0.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in-95 {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation-duration: 0.2s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-top-2 {
+  animation-name: slide-in-from-top-2;
+}
+
+.zoom-in-95 {
+  animation-name: zoom-in-95;
+}

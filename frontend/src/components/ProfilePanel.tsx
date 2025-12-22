@@ -17,6 +17,7 @@ interface UserProfile {
 }
 
 type SettingsTab = 'profile' | 'account' | 'notifications' | 'appearance' | 'security';
+type ThemeColor = 'indigo' | 'purple' | 'blue' | 'emerald' | 'amber' | 'rose';
 
 export default function ProfilePanel() {
   const router = useRouter();
@@ -26,9 +27,9 @@ export default function ProfilePanel() {
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [mounted, setMounted] = useState(false);
   
-  // Garante que o portal só rode no cliente
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -56,29 +57,179 @@ export default function ProfilePanel() {
     priceAlerts: true
   });
 
-  const [theme, setTheme] = useState<'dark' | 'light' | 'auto'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [accentColor, setAccentColor] = useState<ThemeColor>('indigo');
+
+  // Carrega dados do perfil do localStorage
+  useEffect(() => {
+    const storedName = localStorage.getItem('userName');
+    const storedEmail = localStorage.getItem('userEmail');
+    const storedTheme = localStorage.getItem('theme') as 'dark' | 'light';
+    const storedColor = localStorage.getItem('accentColor') as ThemeColor;
+
+    if (storedName) setProfile(prev => ({ ...prev, name: storedName }));
+    if (storedEmail) setProfile(prev => ({ ...prev, email: storedEmail }));
+    if (storedTheme) setTheme(storedTheme);
+    if (storedColor) setAccentColor(storedColor);
+
+    setFormData(prev => ({
+      ...prev,
+      name: storedName || prev.name,
+      email: storedEmail || prev.email
+    }));
+  }, []);
+
+  // Aplica o tema
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Aplica a cor de destaque
+  useEffect(() => {
+    document.documentElement.setAttribute('data-accent-color', accentColor);
+    localStorage.setItem('accentColor', accentColor);
+  }, [accentColor]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
     router.push('/login');
   };
 
-  const handleSaveProfile = () => {
-    setProfile({ ...profile, name: formData.name, email: formData.email });
-    setSaveSuccess(true);
-    setIsEditing(false);
-    setTimeout(() => setSaveSuccess(false), 3000);
+  const handleSaveProfile = async () => {
+    try {
+      setSaveError('');
+      
+      // Validação
+      if (!formData.name.trim() || formData.name.length < 2) {
+        setSaveError('Nome deve ter pelo menos 2 caracteres');
+        return;
+      }
+
+      if (!formData.email.includes('@')) {
+        setSaveError('Email inválido');
+        return;
+      }
+
+      // Salva no localStorage (em produção, seria uma chamada à API)
+      localStorage.setItem('userName', formData.name);
+      localStorage.setItem('userEmail', formData.email);
+      
+      setProfile({ ...profile, name: formData.name, email: formData.email });
+      setSaveSuccess(true);
+      setIsEditing(false);
+      
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      setSaveError('Erro ao salvar perfil');
+    }
   };
 
-  const handlePasswordChange = () => {
-    if (formData.newPassword !== formData.confirmPassword) {
-      alert('As senhas não coincidem');
+  const handlePasswordChange = async () => {
+    try {
+      setSaveError('');
+
+      // Validações
+      if (!formData.currentPassword) {
+        setSaveError('Digite a senha atual');
+        return;
+      }
+
+      if (formData.newPassword.length < 6) {
+        setSaveError('Nova senha deve ter pelo menos 6 caracteres');
+        return;
+      }
+
+      if (formData.newPassword !== formData.confirmPassword) {
+        setSaveError('As senhas não coincidem');
+        return;
+      }
+
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('token');
+
+      if (!userId || !token) {
+        setSaveError('Usuário não autenticado');
+        return;
+      }
+
+      // Chama API para alterar senha
+      const response = await fetch(`http://localhost:8000/api/user/change-password?user_id=${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          current_password: formData.currentPassword,
+          new_password: formData.newPassword
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Erro ao alterar senha');
+      }
+
+      // Limpa os campos
+      setFormData({
+        ...formData,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error: any) {
+      setSaveError(error.message || 'Erro ao alterar senha');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmText = prompt(
+      'Esta ação é irreversível. Digite "DELETAR" para confirmar:'
+    );
+
+    if (confirmText !== 'DELETAR') {
+      alert('Exclusão cancelada');
       return;
     }
-    setSaveSuccess(true);
-    setFormData({ ...formData, currentPassword: '', newPassword: '', confirmPassword: '' });
-    setTimeout(() => setSaveSuccess(false), 3000);
+
+    try {
+      const userId = localStorage.getItem('userId');
+      const token = localStorage.getItem('token');
+
+      if (!userId || !token) {
+        alert('Usuário não autenticado');
+        return;
+      }
+
+      // Chama API para deletar conta
+      const response = await fetch(`http://localhost:8000/api/user/me?user_id=${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir conta');
+      }
+
+      localStorage.clear();
+      alert('Conta excluída com sucesso');
+      router.push('/');
+    } catch (error) {
+      alert('Erro ao excluir conta. Tente novamente.');
+    }
   };
 
   const tabs = [
@@ -89,14 +240,24 @@ export default function ProfilePanel() {
     { id: 'security', label: 'Segurança', icon: Shield }
   ];
 
-  // Componente do Modal separado para usar no Portal
+  const colorOptions: { value: ThemeColor; name: string; class: string }[] = [
+    { value: 'indigo', name: 'Índigo', class: 'bg-indigo-500' },
+    { value: 'purple', name: 'Roxo', class: 'bg-purple-500' },
+    { value: 'blue', name: 'Azul', class: 'bg-blue-500' },
+    { value: 'emerald', name: 'Verde', class: 'bg-emerald-500' },
+    { value: 'amber', name: 'Âmbar', class: 'bg-amber-500' },
+    { value: 'rose', name: 'Rosa', class: 'bg-rose-500' }
+  ];
+
   const SettingsModal = () => (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      onClick={() => setShowSettings(false)}
+    >
       <div 
-        className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+        className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
         <div className="p-6 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center">
@@ -113,7 +274,6 @@ export default function ProfilePanel() {
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
           <div className="hidden md:block w-56 border-r border-slate-800 p-4 flex-shrink-0 overflow-y-auto">
             <div className="space-y-1">
               {tabs.map((tab) => {
@@ -136,29 +296,7 @@ export default function ProfilePanel() {
             </div>
           </div>
 
-          {/* Mobile Tab Select (Visível apenas em mobile) */}
-          <div className="md:hidden w-full border-b border-slate-800 p-2 overflow-x-auto flex gap-2">
-             {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as SettingsTab)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap transition-all ${
-                      activeTab === tab.id
-                        ? 'bg-indigo-500/20 text-indigo-400'
-                        : 'text-slate-400 bg-slate-800/50'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="font-semibold text-xs">{tab.label}</span>
-                  </button>
-                );
-              })}
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+          <div className="flex-1 p-6 overflow-y-auto">
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
@@ -168,29 +306,18 @@ export default function ProfilePanel() {
                 </div>
 
                 {saveSuccess && (
-                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
                     <Check className="w-5 h-5 text-emerald-400" />
                     <p className="text-emerald-400 font-semibold">Alterações salvas com sucesso!</p>
                   </div>
                 )}
 
-                <div className="flex items-center gap-6">
-                  <div className="relative">
-                    <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-lg">
-                      {profile.name.charAt(0)}
-                    </div>
-                    <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-slate-800 border-2 border-slate-900 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-all">
-                      <Camera className="w-5 h-5 text-slate-400" />
-                    </button>
+                {saveError && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400" />
+                    <p className="text-red-400 font-semibold">{saveError}</p>
                   </div>
-                  <div>
-                    <p className="text-white font-bold mb-1">Foto de Perfil</p>
-                    <p className="text-slate-400 text-sm mb-3">JPG, PNG ou GIF, máx. 2MB</p>
-                    <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition-all">
-                      Alterar Foto
-                    </button>
-                  </div>
-                </div>
+                )}
 
                 <div className="grid gap-4">
                   <div>
@@ -232,7 +359,11 @@ export default function ProfilePanel() {
                         Salvar Alterações
                       </button>
                       <button 
-                        onClick={() => { setIsEditing(false); setFormData({ ...formData, name: profile.name, email: profile.email }); }}
+                        onClick={() => {
+                          setIsEditing(false);
+                          setSaveError('');
+                          setFormData({ ...formData, name: profile.name, email: profile.email });
+                        }}
                         className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all"
                       >
                         Cancelar
@@ -262,44 +393,21 @@ export default function ProfilePanel() {
                     </div>
                   </div>
                   <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      <span className="text-slate-300">Alertas ilimitados</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      <span className="text-slate-300">Notificações por email</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      <span className="text-slate-300">Histórico de 30 dias</span>
-                    </div>
+                    {[
+                      'Alertas ilimitados',
+                      'Notificações por email',
+                      'Histórico de 30 dias'
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span className="text-slate-300">{item}</span>
+                      </div>
+                    ))}
                   </div>
                   <button className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
                     <Crown className="w-4 h-4" />
                     Upgrade para Premium
                   </button>
-                </div>
-
-                <div>
-                  <h4 className="text-lg font-bold text-white mb-4">Premium Benefits</h4>
-                  <div className="grid gap-3">
-                    {[
-                      'Alertas em tempo real (30 segundos)',
-                      'Notificações por WhatsApp',
-                      'Análise de indicadores técnicos',
-                      'Histórico ilimitado',
-                      'Suporte prioritário',
-                      'Sem anúncios'
-                    ].map((benefit, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl">
-                        <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Crown className="w-4 h-4 text-amber-400" />
-                        </div>
-                        <span className="text-slate-300 text-sm">{benefit}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -335,7 +443,13 @@ export default function ProfilePanel() {
                   ))}
                 </div>
 
-                <button className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all">
+                <button 
+                  onClick={() => {
+                    setSaveSuccess(true);
+                    setTimeout(() => setSaveSuccess(false), 3000);
+                  }}
+                  className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all"
+                >
                   Salvar Preferências
                 </button>
               </div>
@@ -351,23 +465,24 @@ export default function ProfilePanel() {
 
                 <div>
                   <h4 className="text-lg font-bold text-white mb-4">Tema</h4>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {[
-                      { value: 'dark', label: 'Escuro', icon: '🌙' },
-                      { value: 'light', label: 'Claro', icon: '☀️' },
-                      { value: 'auto', label: 'Automático', icon: '🔄' }
+                      { value: 'dark', label: 'Escuro', icon: '🌙', desc: 'Interface escura (atual)' },
+                      { value: 'light', label: 'Claro', icon: '☀️', desc: 'Interface clara (em breve)' }
                     ].map((t) => (
                       <button 
                         key={t.value}
-                        onClick={() => setTheme(t.value as any)}
+                        onClick={() => setTheme(t.value as 'dark' | 'light')}
+                        disabled={t.value === 'light'}
                         className={`p-6 rounded-2xl border-2 transition-all ${
                           theme === t.value 
                             ? 'border-indigo-500 bg-indigo-500/10' 
                             : 'border-slate-700 hover:border-slate-600 bg-slate-800/30'
-                        }`}
+                        } ${t.value === 'light' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <div className="text-4xl mb-3">{t.icon}</div>
                         <p className="text-sm font-bold text-white">{t.label}</p>
+                        <p className="text-xs text-slate-400 mt-1">{t.desc}</p>
                       </button>
                     ))}
                   </div>
@@ -376,13 +491,24 @@ export default function ProfilePanel() {
                 <div>
                   <h4 className="text-lg font-bold text-white mb-4">Cor de Destaque</h4>
                   <div className="grid grid-cols-6 gap-3">
-                    {['indigo', 'purple', 'blue', 'emerald', 'amber', 'rose'].map((color) => (
+                    {colorOptions.map((color) => (
                       <button 
-                        key={color}
-                        className={`w-12 h-12 rounded-xl bg-${color}-500 hover:scale-110 transition-transform border-4 border-slate-900`}
-                      />
+                        key={color.value}
+                        onClick={() => setAccentColor(color.value)}
+                        className={`relative w-full aspect-square rounded-xl ${color.class} hover:scale-110 transition-all ${
+                          accentColor === color.value ? 'ring-4 ring-white ring-offset-4 ring-offset-slate-900' : ''
+                        }`}
+                        title={color.name}
+                      >
+                        {accentColor === color.value && (
+                          <Check className="absolute inset-0 m-auto w-6 h-6 text-white" />
+                        )}
+                      </button>
                     ))}
                   </div>
+                  <p className="text-sm text-slate-400 mt-3">
+                    Cor selecionada: <span className="font-bold text-white">{colorOptions.find(c => c.value === accentColor)?.name}</span>
+                  </p>
                 </div>
               </div>
             )}
@@ -402,6 +528,13 @@ export default function ProfilePanel() {
                   </div>
                 )}
 
+                {saveError && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400" />
+                    <p className="text-red-400 font-semibold">{saveError}</p>
+                  </div>
+                )}
+
                 <div className="p-6 bg-slate-800/30 rounded-2xl space-y-4">
                   <h4 className="text-lg font-bold text-white">Alterar Senha</h4>
                   
@@ -413,6 +546,7 @@ export default function ProfilePanel() {
                         value={formData.currentPassword}
                         onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
                         className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all pr-12"
+                        placeholder="Digite sua senha atual"
                       />
                       <button 
                         type="button"
@@ -431,6 +565,7 @@ export default function ProfilePanel() {
                       value={formData.newPassword}
                       onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                       className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                      placeholder="Mínimo 6 caracteres"
                     />
                   </div>
 
@@ -441,12 +576,14 @@ export default function ProfilePanel() {
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                      placeholder="Digite novamente a nova senha"
                     />
                   </div>
 
                   <button 
                     onClick={handlePasswordChange}
-                    className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all"
+                    disabled={!formData.currentPassword || !formData.newPassword || !formData.confirmPassword}
+                    className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all"
                   >
                     Alterar Senha
                   </button>
@@ -454,9 +591,12 @@ export default function ProfilePanel() {
 
                 <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl">
                   <h4 className="text-lg font-bold text-red-400 mb-2">Zona de Perigo</h4>
-                  <p className="text-slate-400 text-sm mb-4">Esta ação não pode ser desfeita</p>
-                  <button className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all">
-                    Excluir Conta
+                  <p className="text-slate-400 text-sm mb-4">Esta ação não pode ser desfeita. Todos os seus dados serão permanentemente removidos.</p>
+                  <button 
+                    onClick={handleDeleteAccount}
+                    className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all"
+                  >
+                    Excluir Conta Permanentemente
                   </button>
                 </div>
               </div>
@@ -469,7 +609,6 @@ export default function ProfilePanel() {
 
   return (
     <div className="relative z-50">
-      {/* Profile Button */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-3 px-3 py-2 hover:bg-slate-800/50 rounded-xl transition-all"
@@ -486,23 +625,15 @@ export default function ProfilePanel() {
         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           
-          <div className="absolute right-0 top-[calc(100%+0.5rem)] w-80 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 max-h-[calc(100vh-5rem)] overflow-y-auto"
-               style={{ position: 'absolute' }}>
-            {/* Profile Header */}
+          <div className="absolute right-0 top-[calc(100%+0.5rem)] w-80 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50">
             <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-b border-slate-800">
               <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                    {profile.name.charAt(0)}
-                  </div>
-                  <button className="absolute -bottom-1 -right-1 w-7 h-7 bg-slate-800 border-2 border-slate-900 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-all">
-                    <Camera className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                  {profile.name.charAt(0)}
                 </div>
                 <div className="flex-1">
                   <h3 className="text-white font-bold text-lg">{profile.name}</h3>
@@ -518,25 +649,6 @@ export default function ProfilePanel() {
               )}
             </div>
 
-            {/* Stats */}
-            <div className="p-4 bg-slate-800/30 border-b border-slate-800">
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <p className="text-2xl font-black text-white">12</p>
-                  <p className="text-xs text-slate-400">Alertas</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-emerald-400">8</p>
-                  <p className="text-xs text-slate-400">Disparados</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-indigo-400">4</p>
-                  <p className="text-xs text-slate-400">Ativos</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Menu Items */}
             <div className="p-2">
               <button 
                 onClick={() => { setShowSettings(true); setIsOpen(false); }}
@@ -548,16 +660,6 @@ export default function ProfilePanel() {
                 <div className="flex-1 text-left">
                   <p className="text-white font-semibold text-sm">Configurações</p>
                   <p className="text-xs text-slate-400">Personalize sua conta</p>
-                </div>
-              </button>
-
-              <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 rounded-xl transition-all group">
-                <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
-                  <HelpCircle className="w-5 h-5 text-slate-400 group-hover:text-purple-400" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-white font-semibold text-sm">Ajuda & Suporte</p>
-                  <p className="text-xs text-slate-400">Tire suas dúvidas</p>
                 </div>
               </button>
 
@@ -586,7 +688,6 @@ export default function ProfilePanel() {
         </>
       )}
 
-      {/* Settings Modal renderizado via Portal para evitar problemas de corte/z-index */}
       {showSettings && mounted && createPortal(
         <SettingsModal />,
         document.body

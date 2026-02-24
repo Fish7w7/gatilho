@@ -1,107 +1,101 @@
-# 🔔 Gatilho - Alertas Inteligentes para Ações da B3
+# Gatilho
 
-Sistema completo de alertas para investidores, focado em notificações contextuais e em tempo real.
+Sistema de alertas inteligentes para ações da B3. Notificações contextuais e em tempo real para investidores.
 
-## 🚀 Status do Projeto
-A **Landing Page** está no ar e o desenvolvimento do **MVP (Produto Mínimo Viável)** está começando.
+> **Projeto pausado.** Desenvolvido até o estágio de MVP, pausado por falta de tração e interesse externo. O código fica aqui como referência.
 
-## 📋 Funcionalidades do MVP
+---
 
-O MVP foca na entrega de alertas contextuais de forma confiável.
+## O que foi construído
 
-- ✅ Alertas de **Preço** (ex: PETR4 > R$ 45,00)
-- ✅ Alertas de **Variação Percentual** (ex: VALE3 caiu 5%)
-- ✅ Alertas de **Volume** (ex: Volume acima da média)
-- ✅ **Histórico Completo** de alertas disparados
-- ✅ Dashboard intuitivo para gestão de alertas
-- ✅ Notificações por email
-- ✅ Checagem automática a cada 5 minutos (Base para o Premium de 30s)
+- Alertas de **preço** (ex: PETR4 > R$ 45,00)
+- Alertas de **variação percentual** (ex: VALE3 caiu 5%)
+- Alertas de **volume** acima da média
+- **Histórico** de alertas disparados
+- Dashboard de gestão de alertas
+- Notificações por email
+- Checagem automática a cada 5 minutos
 
-## 📚 Stack Tecnológica
+---
 
-- **Frontend:** Next.js 14 + TypeScript + Tailwind CSS
-- **Backend:** Python 3.11 + FastAPI + SQLAlchemy
-- **Database:** PostgreSQL
-- **Cache/Queue:** Redis + Celery
-- **APIs:** Twelve Data (cotações)
+## Stack
 
-## ⚙️ Setup Rápido
+**Frontend** — Next.js 14 + TypeScript + Tailwind CSS  
+**Backend** — Python 3.11 + FastAPI + SQLAlchemy  
+**Database** — PostgreSQL  
+**Queue** — Redis + Celery  
+**API de cotações** — Twelve Data
 
-### 1. Backend
+---
+
+## Setup
+
+### Pré-requisitos
+
+- Python 3.11+
+- Node.js 18+
+- Docker (para PostgreSQL e Redis)
+
+### 1. Banco de dados
+
+```bash
+docker-compose up -d
+```
+
+### 2. Backend
+
 ```bash
 cd backend
 python -m venv venv
-# Linux/Mac
-source venv/bin/activate
-# Windows (Git Bash)
-# source venv/Scripts/activate
+source venv/bin/activate       # Linux/Mac
+venv\Scripts\activate          # Windows
+
 pip install -r requirements.txt
 ```
 
-### 2. Frontend
+Edite o `.env` e preencha `TWELVE_DATA_API_KEY`.
+
+### 3. Frontend
+
 ```bash
 cd frontend
 npm install
 ```
 
-### 3. Docker (PostgreSQL + Redis)
+---
+
+## Rodar
+
+Precisa de 4 terminais:
+
 ```bash
-docker-compose up -d
+# Terminal 1 — API
+cd backend && uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — Celery worker
+cd backend && celery -A app.tasks.celery_app worker --loglevel=info --pool=solo
+
+# Terminal 3 — Celery beat (scheduler)
+cd backend && celery -A app.tasks.celery_app beat --loglevel=info
+
+# Terminal 4 — Frontend
+cd frontend && npm run dev
 ```
 
-### 4. Configurar .env
-```bash
-cd backend
-# O arquivo .env já foi criado, edite se necessário
-# Preencha TWELVE_DATA_API_KEY
-```
-
-## ▶️ Rodar o Projeto
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
-source venv/bin/activate
-uvicorn app.main:app --reload --port 8000
-```
-
-**Terminal 2 - Celery Worker:**
-```bash
-cd backend
-source venv/bin/activate
-celery -A app.tasks.celery_app worker --loglevel=info --pool=solo
-```
-
-**Terminal 3 - Celery Beat:**
-```bash
-cd backend
-source venv/bin/activate
-celery -A app.tasks.celery_app beat --loglevel=info
-```
-
-**Terminal 4 - Frontend:**
-```bash
-cd frontend
-npm run dev
-```
-
-## 🌐 Acessar
-
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8000
-- **API Docs:** http://localhost:8000/docs
-
-## 📝 Próximos Passos (Roadmap Pós-MVP)
-
-Após a conclusão do MVP, o foco será em funcionalidades Premium e de engajamento:
-
-- [ ] **Alertas de Indicadores Técnicos** (RSI, MACD, Médias Móveis)
-- [ ] **Sistema de Carteira** (Controle de compras/vendas e P&L em tempo real)
-- [ ] **Notificações Premium** (Push e WhatsApp)
-- [ ] **Indicadores Fundamentalistas** (P/L, P/VP, etc.)
-- [ ] **IA Preditiva** (Sugestões inteligentes de alertas)
-- [ ] Implementar autenticação OAuth
+| Serviço | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API | http://localhost:8000 |
+| Docs | http://localhost:8000/docs |
 
 ---
 
-**Desenvolvido com ❤️ para investidores da B3**
+## Roadmap (não implementado)
+
+O que estava planejado antes da pausa:
+
+- Alertas de indicadores técnicos (RSI, MACD, médias móveis)
+- Sistema de carteira com P&L em tempo real
+- Notificações via Push e WhatsApp
+- Indicadores fundamentalistas (P/L, P/VP)
+- Autenticação OAuth
